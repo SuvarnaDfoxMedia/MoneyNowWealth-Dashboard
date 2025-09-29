@@ -24,7 +24,7 @@ router.put(
   ],
   updateProfile
 );
-console.log("✅ profileRoutes loaded");
+
 
 
 export default router;

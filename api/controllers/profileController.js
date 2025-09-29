@@ -29,7 +29,6 @@ export const getProfile = async (req, res) => {
 
 // Update user profile
 export const updateProfile = async (req, res) => {
-    console.log(' updateProfile route hit');
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
