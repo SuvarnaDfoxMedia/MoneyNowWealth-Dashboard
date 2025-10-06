@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
-
+import { FiMail } from "react-icons/fi";
 // Assume these icons are imported from an icon library
+import { FiMessageSquare } from "react-icons/fi";
 import {
   BoxCubeIcon,
   CalenderIcon,
@@ -41,6 +42,19 @@ const navItems: NavItem[] = [
     name: "Blog",
     path: "/blogs",
   },
+  
+  {
+  icon: <FiMail />,
+  name: "Newsletter",
+  path: "/newsletter",
+  },
+
+{
+  icon: <FiMessageSquare />,
+  name: "Contact Enquiry",
+  path: "/contactenquiry",
+},
+
   {
     icon: <UserCircleIcon />,
     name: "User Profile",

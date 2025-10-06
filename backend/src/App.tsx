@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "./context/AuthContext"; // import AuthProvider
 import SignIn from "./pages/AuthPages/SignIn";
@@ -26,6 +26,12 @@ import UserDashBoard from "./pages/userPages/UserDashboard";
 import ForgotPassword from "./pages/AuthPages/ForgotPassword";
 import ResetPassword from "./pages/AuthPages/ResetPassword";
 import ChangePasswordForm from './components/header/ChangePasswordForm';
+import AddBlogs from "./components/AddBlogs";
+import NewsletterLisging from "./components/tables/BasicTables/NewsletterLisging";
+import AddNewsletter from "./components/addNewsletter";
+import UserMetaCard from "./components/UserProfile/UserMetaCard";
+import ContactEnquiryListing from "./components/tables/BasicTables/ContactEnquiryListing";
+import AddContactEnquiry from "./components/AddContactEnquiry";
 
 export default function App() {
   return (
@@ -46,7 +52,17 @@ export default function App() {
             <Route index path="/userdashboard" element={<UserDashBoard />} />
             <Route index path="/" element={<Home />} />
             <Route path="/blogs" element={<BlogList />} />
+            <Route path="/blogs/edit/:id" element={<AddBlogs />} />
+            <Route path="/addblog" element={<AddBlogs />} />
+            <Route path="/newsletter" element={<NewsletterLisging/>} />
+            <Route path="/addnewsletter" element={<AddNewsletter/>} />
+            <Route path="/contactenquiry" element={<ContactEnquiryListing/>} />
+            <Route path="/addcontactenquiry" element={<AddContactEnquiry/>} />
+
+
             <Route path="/profile" element={<UserProfiles />} />
+            {/* <Route path="/profile" element={<UserMetaCard/>} /> */}
+
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/blank" element={<Blank />} />
             <Route path="/form-elements" element={<FormElements />} />

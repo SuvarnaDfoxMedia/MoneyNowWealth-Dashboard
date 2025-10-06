@@ -6,6 +6,7 @@ import Input from "../form/input/InputField";
 import Button from "../ui/button/Button";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { useUser } from "../../context/UserContext";
 
 export default function SignInForm() {
   const [email, setEmail] = useState("");
@@ -13,25 +14,21 @@ export default function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const navigate = useNavigate();
+  const { setUser, refreshUser } = useUser(); // ✅ now also using refreshUser
+
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
   const validateFields = () => {
     const newErrors: { email?: string; password?: string } = {};
 
     // Email validations
-    if (!email.trim()) {
-      newErrors.email = "Email is required.";
-    } else if (!email.includes("@")) {
-      newErrors.email = "Email must include '@'.";
-    } else if (!/^\S+@\S+\.\S+$/.test(email)) {
-      newErrors.email = "Please enter a valid email address.";
-    }
+    if (!email.trim()) newErrors.email = "Email is required.";
+    else if (!email.includes("@")) newErrors.email = "Email must include '@'.";
+    else if (!/^\S+@\S+\.\S+$/.test(email)) newErrors.email = "Please enter a valid email address.";
 
     // Password validations
-    if (!password.trim()) {
-      newErrors.password = "Password is required.";
-    } else if (password.length < 8) {
-      newErrors.password = "Password must be at least 8 characters long.";
-    }
+    if (!password.trim()) newErrors.password = "Password is required.";
+    else if (password.length < 8) newErrors.password = "Password must be at least 8 characters long.";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -45,34 +42,25 @@ export default function SignInForm() {
 
     try {
       const res = await axios.post(
-        "http://localhost:5000/api/auth/login",
+        `${backendUrl}/api/auth/login`,
         { email, password },
         { withCredentials: true }
       );
 
       const user = res.data.user;
-      const role = user.role.toLowerCase();
-      if (!["admin", "editor"].includes(role)) {
-        setTimeout(() => {
-        navigate("/user/dashboard");
-      }, 900);
-        return;
-      }
+      setUser(user); // temporarily set context
+      await refreshUser(); // immediately fetch latest profile info from backend
 
-      localStorage.setItem("user", JSON.stringify(user));
       toast.success("Login successful!");
-      console.log(" Login Success:", user);
-      console.log("Redirecting to /");
-      navigate("/");
-     
-    } catch (err: any) {
-      const backendMsg =
-        err.response?.data?.message || "Invalid login response. Try again.";
 
-      if (
-        backendMsg.toLowerCase().includes("password") ||
-        backendMsg.toLowerCase().includes("credential")
-      ) {
+      // Redirect based on role
+      const role = user.role?.toLowerCase() || "";
+      if (role === "admin" || role === "editor") navigate("/");
+      else navigate("/user/dashboard");
+
+    } catch (err: any) {
+      const backendMsg = err.response?.data?.message || "Login failed";
+      if (backendMsg.toLowerCase().includes("password") || backendMsg.toLowerCase().includes("credential")) {
         setErrors({ password: "Invalid email or password" });
       } else if (backendMsg.toLowerCase().includes("user not found")) {
         setErrors({ email: "No account found with this email" });
@@ -89,7 +77,6 @@ export default function SignInForm() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen pt-20 pb-20 space-y-8">
-      {/* Back link */}
       <div className="w-full max-w-md">
         <Link
           to="/"
@@ -100,7 +87,6 @@ export default function SignInForm() {
         </Link>
       </div>
 
-      {/* Sign in form */}
       <div className="w-full max-w-md">
         <div className="flex flex-col justify-center w-full mx-auto">
           <div className="mb-5 sm:mb-8">
@@ -114,7 +100,6 @@ export default function SignInForm() {
 
           <form onSubmit={handleLogin} noValidate>
             <div className="space-y-6">
-              {/* Email */}
               <div>
                 <Label>
                   Email <span className="text-error-500">*</span>
@@ -126,12 +111,9 @@ export default function SignInForm() {
                   type="text"
                   className={errors.email ? "border-red-500 ring-1 ring-red-500" : ""}
                 />
-                {errors.email && (
-                  <p className="text-red-500 text-sm mt-1">{errors.email}</p>
-                )}
+                {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
               </div>
 
-              {/* Password */}
               <div>
                 <Label>
                   Password <span className="text-error-500">*</span>
@@ -155,12 +137,9 @@ export default function SignInForm() {
                     )}
                   </span>
                 </div>
-                {errors.password && (
-                  <p className="text-red-500 text-sm mt-1">{errors.password}</p>
-                )}
+                {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
               </div>
 
-              {/* Sign in button */}
               <div>
                 <Button className="w-full" size="sm" type="submit">
                   Sign in
@@ -169,7 +148,6 @@ export default function SignInForm() {
             </div>
           </form>
 
-          {/* Bottom links: Sign Up (left) + Forgot Password (right) */}
           <div className="mt-5 flex justify-between items-center text-sm">
             <p className="font-normal text-gray-700 dark:text-gray-400">
               Don&apos;t have an account?{" "}

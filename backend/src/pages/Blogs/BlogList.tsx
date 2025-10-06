@@ -12,9 +12,9 @@ export default function BlogList() {
       />
       <PageBreadcrumb pageTitle="Blog List" />
       <div className="space-y-6">
-        <ComponentCard title="Blog List">
+        {/* <ComponentCard title="Blog List"> */}
           <BasicTableOne />
-        </ComponentCard>
+        {/* </ComponentCard> */}
       </div>
     </>
   );

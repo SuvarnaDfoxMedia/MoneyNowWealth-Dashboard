@@ -1,6 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import blogRoutes from "./routes/blogRoutes.js";
+import newsletterRoutes from "./routes/newsletterRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import connectDatabase from "./db/db.js";
 import helmet from "helmet";
@@ -10,6 +11,7 @@ import cookieParser from "cookie-parser";
 import { protect } from "./middleware/authMiddleware.js";
 import { authorizeRoles } from "./middleware/authMiddleware.js";
 import profileRoutes from "./routes/profileRoutes.js";
+import contactRoutes from "./routes/contactRoutes.js";
 import path from "path";
 import { fileURLToPath } from 'url';
 
@@ -29,20 +31,31 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(helmet());
 app.use(cors({ origin: "http://localhost:5173", credentials: true }));
-app.use("/uploads/blog", express.static("api/uploads/blog")); // Serve images
+app.use('/uploads/blog', express.static(path.join(__dirname, 'uploads/blog'), {
+  setHeaders: (res, path) => {
+    res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5173'); // frontend origin
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin'); // allow cross-origin images
+  }
+})); // Serve images
 
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/test", testRoutes);
+
+app.use("/api", newsletterRoutes);
+app.use("/api", blogRoutes);
+app.use("/api", contactRoutes);
 
 //  Protected routes for role-based access
 // app.get("/api/profile", protect, (req, res) => {
 //   res.json({ message: "Welcome to your profile", user: req.user });
 // });
 
+//blog
+
 
 app.use("/api/profile", profileRoutes)
-// Serve static files with CORS headers
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
   setHeaders: (res, path) => {
     res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5173');
@@ -60,7 +73,6 @@ app.get("/api/editor", protect, authorizeRoles("editor"), (req, res) => {
   res.json({ message: "Editor panel: Access granted" });
 });
 
-//new
 
 // Root route
 app.get("/", (req, res) => {
