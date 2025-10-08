@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { FiMoreVertical, FiTrash2, FiPlus } from "react-icons/fi";
 
 interface Contact {
@@ -25,15 +25,16 @@ export default function ContactEnquiryListing() {
 
   const entriesPerPage = 10;
   const navigate = useNavigate();
+  const { role } = useParams<{ role: string }>(); // get role from URL
   const API_BASE = "http://localhost:5000/api";
 
   const indexOfLast = currentPage * entriesPerPage;
   const indexOfFirst = indexOfLast - entriesPerPage;
 
-  // Fetch contacts (exclude soft-deleted)
   const fetchData = async () => {
+    if (!role) return;
     try {
-      const res = await fetch(`${API_BASE}/contacts?search=${search}`, {
+      const res = await fetch(`${API_BASE}/${role}/contacts?search=${search}`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -47,8 +48,6 @@ export default function ContactEnquiryListing() {
 
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const result = await res.json();
-
-      // Exclude soft-deleted contacts (backend should also do this)
       setData(result.contacts?.filter((c: Contact) => !c.is_deleted) || []);
       setCurrentPage(1);
     } catch (err) {
@@ -59,12 +58,11 @@ export default function ContactEnquiryListing() {
 
   useEffect(() => {
     fetchData();
-  }, [search]);
+  }, [search, role]);
 
   const currentData = data.slice(indexOfFirst, indexOfLast);
   const totalPages = Math.ceil(data.length / entriesPerPage);
 
-  // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
@@ -76,11 +74,10 @@ export default function ContactEnquiryListing() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Soft delete contact
   const handleDelete = async () => {
-    if (!deleteModalId) return;
+    if (!deleteModalId || !role) return;
     try {
-      const res = await fetch(`${API_BASE}/contact/${deleteModalId}`, {
+      const res = await fetch(`${API_BASE}/${role}/contact/${deleteModalId}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -96,12 +93,7 @@ export default function ContactEnquiryListing() {
 
       if (res.ok) {
         toast.success(result.message || "Contact deleted successfully");
-
-        // Update frontend state to remove soft-deleted item from view
-        setData((prev) =>
-          prev.filter((contact) => contact._id !== deleteModalId)
-        );
-
+        setData((prev) => prev.filter((contact) => contact._id !== deleteModalId));
         setDeleteModalId(null);
         setOpenDropdownId(null);
       } else {
@@ -113,7 +105,6 @@ export default function ContactEnquiryListing() {
     }
   };
 
-  // Dropdown position
   const handleDropdownClick = (e: React.MouseEvent<HTMLButtonElement>, id: string) => {
     const rect = e.currentTarget.getBoundingClientRect();
     setDropdownPos({ top: rect.bottom + window.scrollY, left: rect.right - 144 });
@@ -146,7 +137,7 @@ export default function ContactEnquiryListing() {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-3xl font-bold text-gray-800">Contact Enquiries</h2>
         <button
-          onClick={() => navigate("/addcontactenquiry")}
+          onClick={() => navigate(`/${role}/addcontactenquiry`)} // navigate to add page with role
           className="bg-gradient-to-r from-[#043f79] to-[#0a68c1] text-white px-5 py-2 rounded-lg shadow-lg hover:scale-105 transition transform flex items-center gap-2"
         >
           <FiPlus /> Add Contact Enquiry

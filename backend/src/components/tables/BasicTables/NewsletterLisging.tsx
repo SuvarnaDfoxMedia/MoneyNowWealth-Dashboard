@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { FiMoreVertical, FiTrash2, FiPlus } from "react-icons/fi";
 
 interface Newsletter {
@@ -13,6 +13,7 @@ interface Newsletter {
 }
 
 export default function NewsletterListing() {
+  const { role } = useParams<{ role: string }>();
   const [data, setData] = useState<Newsletter[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -27,18 +28,23 @@ export default function NewsletterListing() {
   const indexOfLast = currentPage * entriesPerPage;
   const indexOfFirst = indexOfLast - entriesPerPage;
 
-  // Fetch newsletters with cookie authentication
+  // Fetch newsletters
   const fetchData = async () => {
+    if (!role) {
+      toast.error("Role missing in URL");
+      return;
+    }
+
     try {
-      const res = await fetch(`${API_BASE}/newsletters?search=${search}`, {
+      const res = await fetch(`${API_BASE}/${role}/newsletters?search=${search}`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
-        credentials: "include", // important: send cookie
+        credentials: "include",
       });
 
       if (res.status === 401) {
         toast.error("Session expired. Please login again.");
-        navigate("/login");
+        navigate("/signin");
         return;
       }
 
@@ -55,7 +61,7 @@ export default function NewsletterListing() {
 
   useEffect(() => {
     fetchData();
-  }, [search]);
+  }, [search, role]);
 
   const currentData = data.slice(indexOfFirst, indexOfLast);
   const totalPages = Math.ceil(data.length / entriesPerPage);
@@ -72,21 +78,21 @@ export default function NewsletterListing() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Handle delete
+  // Delete newsletter
   const handleDelete = async () => {
-    if (!deleteModalId) return;
+    if (!deleteModalId || !role) return;
     try {
-      const res = await fetch(`${API_BASE}/newsletter/${deleteModalId}`, {
+      const res = await fetch(`${API_BASE}/${role}/newsletter/${deleteModalId}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        credentials: "include", // important: send cookie
+        credentials: "include",
       });
 
       const data = await res.json();
 
       if (res.status === 401) {
         toast.error("Unauthorized action. Please login.");
-        navigate("/login");
+        navigate("/signin");
         return;
       }
 
@@ -110,8 +116,8 @@ export default function NewsletterListing() {
     setOpenDropdownId(openDropdownId === id ? null : id);
   };
 
-  const Dropdown = ({ newsletterId }: { newsletterId: string }) => {
-    return createPortal(
+  const Dropdown = ({ newsletterId }: { newsletterId: string }) =>
+    createPortal(
       <div
         className="absolute bg-white border rounded-xl shadow-lg z-50 w-36 dropdown-menu animate-scaleIn"
         style={{ top: dropdownPos.top, left: dropdownPos.left }}
@@ -128,7 +134,6 @@ export default function NewsletterListing() {
       </div>,
       document.body
     );
-  };
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
@@ -136,7 +141,7 @@ export default function NewsletterListing() {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-3xl font-bold text-gray-800">Newsletter Listing</h2>
         <button
-          onClick={() => navigate("/addnewsletter")}
+          onClick={() => navigate(`/${role}/addnewsletter`)}
           className="bg-gradient-to-r from-[#043f79] to-[#0a68c1] text-white px-5 py-2 rounded-lg shadow-lg hover:scale-105 transition transform flex items-center gap-2"
         >
           <FiPlus /> Add Newsletter

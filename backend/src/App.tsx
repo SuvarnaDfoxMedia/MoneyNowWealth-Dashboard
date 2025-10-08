@@ -1,37 +1,45 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import React from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
-import { AuthProvider } from "./context/AuthContext"; // import AuthProvider
-import SignIn from "./pages/AuthPages/SignIn";
-import SignUp from "./pages/AuthPages/SignUp";
-import NotFound from "./pages/OtherPage/NotFound";
-import UserProfiles from "./pages/UserProfiles";
-import Videos from "./pages/UiElements/Videos";
-import Images from "./pages/UiElements/Images";
-import Alerts from "./pages/UiElements/Alerts";
-import Badges from "./pages/UiElements/Badges";
-import Avatars from "./pages/UiElements/Avatars";
-import Buttons from "./pages/UiElements/Buttons";
-import LineChart from "./pages/Charts/LineChart";
-import BarChart from "./pages/Charts/BarChart";
-import Calendar from "./pages/Calendar";
-import BasicTables from "./pages/Tables/BasicTables";
-import FormElements from "./pages/Forms/FormElements";
-import Blank from "./pages/Blank";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import PrivateRoute from "./components/auth/PrivateRoute";
 import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
-import Home from "./pages/Dashboard/Home";
-import BlogList from "./pages/Blogs/BlogList";
-import PrivateRoute from "./components/auth/PrivateRoute";
-import UserDashBoard from "./pages/userPages/UserDashboard";
+
+// Pages
+import SignIn from "./pages/AuthPages/SignIn";
+import SignUp from "./pages/AuthPages/SignUp";
 import ForgotPassword from "./pages/AuthPages/ForgotPassword";
 import ResetPassword from "./pages/AuthPages/ResetPassword";
-import ChangePasswordForm from './components/header/ChangePasswordForm';
+
+import Home from "./pages/Dashboard/Home";
+import UserDashBoard from "./pages/userPages/UserDashboard";
+import BlogList from "./pages/Blogs/BlogList";
 import AddBlogs from "./components/AddBlogs";
+
 import NewsletterLisging from "./components/tables/BasicTables/NewsletterLisging";
-import AddNewsletter from "./components/addNewsletter";
-import UserMetaCard from "./components/UserProfile/UserMetaCard";
+import AddNewsletter from "./components/AddNewsletter";
 import ContactEnquiryListing from "./components/tables/BasicTables/ContactEnquiryListing";
 import AddContactEnquiry from "./components/AddContactEnquiry";
+import ChangePasswordForm from "./components/header/ChangePasswordForm";
+
+import Calendar from "./pages/Calendar";
+import FormElements from "./pages/Forms/FormElements";
+import BasicTables from "./pages/Tables/BasicTables";
+import Blank from "./pages/Blank";
+
+import Alerts from "./pages/UiElements/Alerts";
+import Avatars from "./pages/UiElements/Avatars";
+import Badges from "./pages/UiElements/Badges";
+import Buttons from "./pages/UiElements/Buttons";
+import Images from "./pages/UiElements/Images";
+import Videos from "./pages/UiElements/Videos";
+
+import LineChart from "./pages/Charts/LineChart";
+import BarChart from "./pages/Charts/BarChart";
+
+import NotFound from "./pages/OtherPage/NotFound";
+import UserProfiles from "./pages/UserProfiles";
 
 export default function App() {
   return (
@@ -39,55 +47,84 @@ export default function App() {
       <Router>
         <ScrollToTop />
         <Toaster position="top-right" reverseOrder={false} />
-
-        <Routes>
-          {/* Dashboard Layout protected by role */}
-          <Route
-            element={
-              <PrivateRoute roles={["admin", "editor"]}>
-                <AppLayout />
-              </PrivateRoute>
-            }
-          >
-            <Route index path="/userdashboard" element={<UserDashBoard />} />
-            <Route index path="/" element={<Home />} />
-            <Route path="/blogs" element={<BlogList />} />
-            <Route path="/blogs/edit/:id" element={<AddBlogs />} />
-            <Route path="/addblog" element={<AddBlogs />} />
-            <Route path="/newsletter" element={<NewsletterLisging/>} />
-            <Route path="/addnewsletter" element={<AddNewsletter/>} />
-            <Route path="/contactenquiry" element={<ContactEnquiryListing/>} />
-            <Route path="/addcontactenquiry" element={<AddContactEnquiry/>} />
-
-
-            <Route path="/profile" element={<UserProfiles />} />
-            {/* <Route path="/profile" element={<UserMetaCard/>} /> */}
-
-            <Route path="/calendar" element={<Calendar />} />
-            <Route path="/blank" element={<Blank />} />
-            <Route path="/form-elements" element={<FormElements />} />
-            <Route path="/basic-tables" element={<BasicTables />} />
-            <Route path="/alerts" element={<Alerts />} />
-            <Route path="/avatars" element={<Avatars />} />
-            <Route path="/badge" element={<Badges />} />
-            <Route path="/buttons" element={<Buttons />} />
-            <Route path="/images" element={<Images />} />
-            <Route path="/videos" element={<Videos />} />
-            <Route path="/line-chart" element={<LineChart />} />
-            <Route path="/bar-chart" element={<BarChart />} />
-            <Route path="/change-password" element={<ChangePasswordForm/>} />
-          </Route>
-
-          {/* Auth Layout */}
-          <Route path="/signin" element={<SignIn />} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password/:token" element={<ResetPassword />} />
-
-          {/* Fallback Route */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AppRoutes />
       </Router>
     </AuthProvider>
+  );
+}
+
+function AppRoutes() {
+  const { user, loading } = useAuth();
+
+  if (loading) return <p className="p-5 text-center">Loading...</p>;
+
+  const role = user?.role;
+
+  return (
+    <Routes>
+  {/* Default landing */}
+  <Route
+    path="/"
+    element={
+      user ? (
+        role === "admin" || role === "editor" ? (
+          <Navigate to={`/${role}/dashboard`} replace />
+        ) : (
+          <Navigate to="/user/dashboard" replace />
+        )
+      ) : (
+        <Navigate to="/signin" replace />
+      )
+    }
+  />
+
+  {/* Public Routes */}
+  <Route path="/signin" element={<SignIn />} />
+  <Route path="/signup" element={<SignUp />} />
+  <Route path="/forgot-password" element={<ForgotPassword />} />
+  <Route path="/reset-password/:token" element={<ResetPassword />} />
+
+  {/* Admin & Editor Routes */}
+  <Route element={<PrivateRoute roles={["admin", "editor"]}><AppLayout /></PrivateRoute>}>
+    <Route path="/:role/dashboard" element={<Home />} />
+    <Route path="/:role/blogs" element={<BlogList />} />
+    <Route path="/:role/blogs/create" element={<AddBlogs />} />
+    <Route path="/:role/blog/edit/:id" element={<AddBlogs />} />
+   <Route path="/:role/profile" element={<UserProfiles />} />  
+    <Route path="/:role/change-password" element={<ChangePasswordForm />} />
+
+    {/* Admin-only routes */}
+    {role === "admin" && (
+      <>
+        <Route path="/:role/newsletter" element={<NewsletterLisging />} />
+        <Route path="/:role/addnewsletter" element={<AddNewsletter />} />
+        <Route path="/:role/contactenquiry" element={<ContactEnquiryListing />} />
+        <Route path="/form-elements" element={<FormElements />} />
+        <Route path="/basic-tables" element={<BasicTables />} />
+        <Route path="/blank" element={<Blank />} />
+        <Route path="/alerts" element={<Alerts />} />
+        <Route path="/avatars" element={<Avatars />} />
+        <Route path="/badge" element={<Badges />} />
+        <Route path="/buttons" element={<Buttons />} />
+        <Route path="/images" element={<Images />} />
+        <Route path="/videos" element={<Videos />} />
+        <Route path="/line-chart" element={<LineChart />} />
+        <Route path="/bar-chart" element={<BarChart />} />
+        <Route path="/calendar" element={<Calendar />} />
+      </>
+    )}
+  </Route>
+
+  {/* User Routes */}
+  <Route element={<PrivateRoute roles={["user"]}><AppLayout /></PrivateRoute>}>
+    <Route path="/user/dashboard" element={<UserDashBoard />} />
+    <Route path="/user/profile" element={<UserProfiles />} />          
+    <Route path="/user/change-password" element={<ChangePasswordForm />} /> 
+  </Route>
+
+  {/* Fallback */}
+  <Route path="*" element={<NotFound />} />
+</Routes>
+
   );
 }

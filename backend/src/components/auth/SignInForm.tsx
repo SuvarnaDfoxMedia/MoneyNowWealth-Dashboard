@@ -1,32 +1,30 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router";
+import { useNavigate, Link } from "react-router-dom";
 import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "../../icons";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Button from "../ui/button/Button";
-import axios from "axios";
+import { useAuth } from "../../context/AuthContext";
 import toast from "react-hot-toast";
-import { useUser } from "../../context/UserContext";
+import axios from "axios";
 
 export default function SignInForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+
   const navigate = useNavigate();
-  const { setUser, refreshUser } = useUser(); // ✅ now also using refreshUser
+  const { setAuth } = useAuth(); // use AuthContext
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
   const validateFields = () => {
     const newErrors: { email?: string; password?: string } = {};
 
-    // Email validations
     if (!email.trim()) newErrors.email = "Email is required.";
-    else if (!email.includes("@")) newErrors.email = "Email must include '@'.";
     else if (!/^\S+@\S+\.\S+$/.test(email)) newErrors.email = "Please enter a valid email address.";
 
-    // Password validations
     if (!password.trim()) newErrors.password = "Password is required.";
     else if (password.length < 8) newErrors.password = "Password must be at least 8 characters long.";
 
@@ -47,17 +45,21 @@ export default function SignInForm() {
         { withCredentials: true }
       );
 
-      const user = res.data.user;
-      setUser(user); // temporarily set context
-      await refreshUser(); // immediately fetch latest profile info from backend
+      const loggedInUser = res.data.user;
+      const token = res.data.token;
+
+      // Set user & token in AuthContext
+      setAuth(token, loggedInUser);
 
       toast.success("Login successful!");
 
-      // Redirect based on role
-      const role = user.role?.toLowerCase() || "";
-      if (role === "admin" || role === "editor") navigate("/");
-      else navigate("/user/dashboard");
-
+      // Navigate based on role
+      const role = loggedInUser.role?.toLowerCase();
+      if (role === "admin" || role === "editor") {
+        navigate(`/${role}/dashboard`, { replace: true });
+      } else {
+        navigate("/userdashboard", { replace: true });
+      }
     } catch (err: any) {
       const backendMsg = err.response?.data?.message || "Login failed";
       if (backendMsg.toLowerCase().includes("password") || backendMsg.toLowerCase().includes("credential")) {
@@ -65,11 +67,7 @@ export default function SignInForm() {
       } else if (backendMsg.toLowerCase().includes("user not found")) {
         setErrors({ email: "No account found with this email" });
         toast.error("User not found. Please sign up first.");
-      } else if (backendMsg.toLowerCase().includes("email")) {
-        setErrors({ email: backendMsg });
-        toast.error(backendMsg);
       } else {
-        setErrors({ password: backendMsg });
         toast.error(backendMsg);
       }
     }
@@ -80,7 +78,7 @@ export default function SignInForm() {
       <div className="w-full max-w-md">
         <Link
           to="/"
-          className="inline-flex items-center text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+          className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
         >
           <ChevronLeftIcon className="size-5" />
           Back to dashboard
@@ -151,18 +149,12 @@ export default function SignInForm() {
           <div className="mt-5 flex justify-between items-center text-sm">
             <p className="font-normal text-gray-700 dark:text-gray-400">
               Don&apos;t have an account?{" "}
-              <Link
-                to="/signup"
-                className="text-brand-500 hover:text-brand-600 dark:text-brand-400"
-              >
+              <Link to="/signup" className="text-brand-500 hover:text-brand-600 dark:text-brand-400">
                 Sign Up
               </Link>
             </p>
 
-            <Link
-              to="/forgot-password"
-              className="text-brand-500 hover:text-brand-600 dark:text-brand-400"
-            >
+            <Link to="/forgot-password" className="text-brand-500 hover:text-brand-600 dark:text-brand-400">
               Forgot password?
             </Link>
           </div>

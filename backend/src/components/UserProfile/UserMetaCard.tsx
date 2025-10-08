@@ -12,32 +12,71 @@ export default function UserMetaCard() {
   const { isOpen, openModal, closeModal } = useModal();
   const { user, refreshUser } = useUser();
   const [formData, setFormData] = useState({ firstname: "", lastname: "", phone: "", address: "" });
-  const [profileImage, setProfileImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [profileImage, setProfileImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
   const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
-  useEffect(() => {
+  // Load existing user data
+  const resetForm = () => {
     if (user) {
       const [first, ...rest] = user.name?.split(" ") || [];
       setFormData({
         firstname: first || "",
         lastname: rest.join(" ") || "",
         phone: user.phone || "",
-        address: user.address || ""
+        address: user.address || "",
       });
+      setProfileImage(null);
+      setImagePreview(user?.profileImage ? `${backendUrl}${user.profileImage}?v=${Date.now()}` : null);
+      setErrors({});
     }
-  }, [user]);
+  };
 
   useEffect(() => {
-    if (user?.profileImage) {
-      setImagePreview(`${backendUrl}${user.profileImage}?v=${Date.now()}`);
-    }
-  }, [user?.profileImage]);
+    resetForm();
+  }, [user]);
 
-  const handleSave = async (e: React.FormEvent) => {
+  // Handle profile image upload
+  const handleImageChange = (e) => {
+    setErrors((prev) => ({ ...prev, profileImage: null }));
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (!file.type.startsWith("image/")) {
+        setErrors((prev) => ({ ...prev, profileImage: "Only image files are allowed!" }));
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setErrors((prev) => ({ ...prev, profileImage: "File size cannot exceed 5MB!" }));
+        return;
+      }
+      setProfileImage(file);
+      const reader = new FileReader();
+      reader.onload = () => setImagePreview(reader.result);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle form submit
+  const handleSave = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setErrors({});
+
+    const newErrors = {};
+    if (!formData.firstname.trim()) newErrors.firstname = "First Name is required";
+    if (!formData.lastname.trim()) newErrors.lastname = "Last Name is required";
+    if (!formData.phone.trim()) newErrors.phone = "Phone is required";
+    if (formData.phone.trim() && formData.phone.trim().length < 10)
+      newErrors.phone = "Phone must be at least 10 characters";
+    if (!formData.address.trim()) newErrors.address = "Address is required";
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      setLoading(false);
+      return;
+    }
 
     try {
       const submitData = new FormData();
@@ -46,33 +85,42 @@ export default function UserMetaCard() {
       submitData.append("address", formData.address);
       if (profileImage) submitData.append("profileImage", profileImage);
 
-      await axios.put(`${backendUrl}/api/profile`, submitData, {
+      const res = await axios.put(`${backendUrl}/api/profile`, submitData, {
         withCredentials: true,
-        headers: { "Content-Type": "multipart/form-data" }
+        headers: { "Content-Type": "multipart/form-data" },
       });
 
-      await refreshUser(); 
-      toast.success("Profile updated successfully!");
+      await refreshUser();
+      toast.success(res.data.message || "Profile updated successfully!");
       closeModal();
-      setProfileImage(null);
-      setImagePreview(null);
-
-    } catch (err: any) {
-      toast.error("Failed to update profile.");
+    } catch (err) {
+      if (err.response?.data?.errors) {
+        const fieldErrors = {};
+        err.response.data.errors.forEach((e) => {
+          if (e.param === "name") {
+            fieldErrors.firstname = e.msg;
+            fieldErrors.lastname = e.msg;
+          }
+          if (e.param === "phone") fieldErrors.phone = e.msg;
+          if (e.param === "address") fieldErrors.address = e.msg;
+        });
+        setErrors(fieldErrors);
+      } else if (err.response?.data?.message) {
+        toast.error(err.response.data.message);
+      } else {
+        toast.error("Failed to update profile.");
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setProfileImage(file);
-      const reader = new FileReader();
-      reader.onload = () => setImagePreview(reader.result as string);
-      reader.readAsDataURL(file);
-    }
-  };
+  const inputClass = (field) =>
+    `w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+      errors[field]
+        ? "border-red-500 ring-red-500 dark:border-red-500"
+        : "border-gray-300 dark:border-gray-700 ring-blue-500 dark:bg-gray-800"
+    }`;
 
   return (
     <>
@@ -82,7 +130,10 @@ export default function UserMetaCard() {
           <div className="flex flex-col items-center w-full gap-6 xl:flex-row">
             <div className="w-20 h-20 overflow-hidden border border-gray-200 rounded-full dark:border-gray-800">
               <img
-                src={imagePreview || (user?.profileImage ? `${backendUrl}${user.profileImage}` : "/images/user/owner.jpg")}
+                src={
+                  imagePreview ||
+                  (user?.profileImage ? `${backendUrl}${user.profileImage}` : "/images/user/owner.jpg")
+                }
                 alt="Profile"
                 className="object-cover w-full h-full"
               />
@@ -107,6 +158,7 @@ export default function UserMetaCard() {
               </div>
             </div>
           </div>
+
           <button
             onClick={openModal}
             className="flex w-full items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200 lg:inline-flex lg:w-auto"
@@ -119,15 +171,6 @@ export default function UserMetaCard() {
       {/* Modal */}
       <Modal isOpen={isOpen} onClose={closeModal} className="max-w-[700px] m-4">
         <div className="relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
-          {/* Close Button inside Form */}
-          <button
-            type="button"
-            onClick={closeModal}
-            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl font-bold"
-          >
-            &times;
-          </button>
-
           <div className="px-2 pr-14">
             <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
               Edit Personal Information
@@ -138,7 +181,6 @@ export default function UserMetaCard() {
           </div>
 
           <form onSubmit={handleSave} className="flex flex-col">
-            {/* Scrollable Content */}
             <div className="custom-scrollbar h-[450px] overflow-y-auto px-2 pb-3">
               {/* Profile Image */}
               <div className="mt-7">
@@ -148,7 +190,10 @@ export default function UserMetaCard() {
                 <div className="flex items-center gap-6 mb-6">
                   <div className="w-20 h-20 overflow-hidden border border-gray-200 rounded-full dark:border-gray-800">
                     <img
-                      src={imagePreview || (user?.profileImage ? `${backendUrl}${user.profileImage}` : "/images/user/owner.jpg")}
+                      src={
+                        imagePreview ||
+                        (user?.profileImage ? `${backendUrl}${user.profileImage}` : "/images/user/owner.jpg")
+                      }
                       alt="Profile preview"
                       className="object-cover w-full h-full"
                     />
@@ -160,8 +205,9 @@ export default function UserMetaCard() {
                       type="file"
                       accept="image/*"
                       onChange={handleImageChange}
-                      className="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md dark:border-gray-700 dark:bg-gray-800"
+                      className={inputClass("profileImage")}
                     />
+                    {errors.profileImage && <p className="mt-1 text-sm text-red-600">{errors.profileImage}</p>}
                     <p className="mt-1 text-xs text-gray-500">JPG, PNG or GIF (Max 5MB)</p>
                   </div>
                 </div>
@@ -174,40 +220,46 @@ export default function UserMetaCard() {
                 </h5>
 
                 <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
-                  <div className="col-span-2 lg:col-span-1">
+                  <div>
                     <Label htmlFor="firstname">First Name</Label>
                     <Input
                       id="firstname"
                       name="firstname"
                       type="text"
                       value={formData.firstname}
-                      onChange={e => setFormData({ ...formData, firstname: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, firstname: e.target.value })}
                       placeholder="Enter your first name"
+                      className={inputClass("firstname")}
                     />
+                    {errors.firstname && <p className="mt-1 text-sm text-red-600">{errors.firstname}</p>}
                   </div>
 
-                  <div className="col-span-2 lg:col-span-1">
+                  <div>
                     <Label htmlFor="lastname">Last Name</Label>
                     <Input
                       id="lastname"
                       name="lastname"
                       type="text"
                       value={formData.lastname}
-                      onChange={e => setFormData({ ...formData, lastname: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, lastname: e.target.value })}
                       placeholder="Enter your last name"
+                      className={inputClass("lastname")}
                     />
+                    {errors.lastname && <p className="mt-1 text-sm text-red-600">{errors.lastname}</p>}
                   </div>
 
-                  <div className="col-span-2 lg:col-span-1">
+                  <div>
                     <Label htmlFor="phone">Phone</Label>
                     <Input
                       id="phone"
                       name="phone"
                       type="text"
                       value={formData.phone}
-                      onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                       placeholder="Enter your phone number"
+                      className={inputClass("phone")}
                     />
+                    {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone}</p>}
                   </div>
 
                   <div className="col-span-2">
@@ -216,11 +268,12 @@ export default function UserMetaCard() {
                       id="address"
                       name="address"
                       value={formData.address}
-                      onChange={e => setFormData({ ...formData, address: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                       placeholder="Enter your address"
                       rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={inputClass("address")}
                     />
+                    {errors.address && <p className="mt-1 text-sm text-red-600">{errors.address}</p>}
                   </div>
                 </div>
               </div>
@@ -228,8 +281,8 @@ export default function UserMetaCard() {
 
             {/* Buttons */}
             <div className="flex items-center gap-3 px-2 mt-6 lg:justify-end">
-              <Button type="button" onClick={closeModal} disabled={loading}>
-                Cancel
+              <Button type="button" onClick={resetForm} disabled={loading}>
+                Reset
               </Button>
               <Button type="submit" disabled={loading}>
                 {loading ? "Saving..." : "Save Changes"}

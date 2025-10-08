@@ -59,90 +59,208 @@ export const registerUser = async (req, res) => {
       });
 
     //  Trigger emails in background (non-blocking)
-    await sendEmail(newUser.email, "Welcome to MoneyNow Wealth!", null, `<!DOCTYPE html>
-  <html>
-    <head>
-      <meta charset="UTF-8" />
-      <title>Welcome to MoneyNow Wealth</title>
-      <style>
-        body {
-          font-family: Arial, sans-serif;
-          background: #f4f6f8;
-          margin: 0;
-          padding: 0;
-        }
+  //   await sendEmail(newUser.email, "Welcome to MoneyNow Wealth!", null, `<!DOCTYPE html>
+  // <html>
+  //   <head>
+  //     <meta charset="UTF-8" />
+  //     <title>Welcome to MoneyNow Wealth</title>
+  //     <style>
+  //       body {
+  //         font-family: Arial, sans-serif;
+  //         background: #f4f6f8;
+  //         margin: 0;
+  //         padding: 0;
+  //       }
+  //       .container {
+  //         max-width: 600px;
+  //         margin: 30px auto;
+  //         background: #ffffff;
+  //         border-radius: 10px;
+  //         overflow: hidden;
+  //         box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  //       }
+  //       .header {
+  //         background: #140084;
+  //         color: #fff;
+  //         text-align: center;
+  //         padding: 30px 20px;
+  //       }
+  //       .header img {
+  //         width: 120px;
+  //         cursor: pointer;
+  //       }
+  //       .header h1 {
+  //         margin: 15px 0 0;
+  //         font-size: 24px;
+  //       }
+  //       .content {
+  //         padding: 30px 20px;
+  //         color: #333;
+  //         line-height: 1.6;
+  //       }
+  //       .btn {
+  //         display: inline-block;            /* inline-block so it fits content */
+  //         margin: 20px auto 0 auto;         /* center horizontally */
+  //         padding: 12px 25px;
+  //         background: #140084;
+  //         color: #fff;
+  //         text-decoration: none;
+  //         border-radius: 6px;
+  //         font-weight: bold;
+  //         text-align: center;               /* center text inside */
+  //       }
+  //       .footer {
+  //         text-align: center;
+  //         font-size: 12px;
+  //         color: #888;
+  //         padding: 20px;
+  //         background: #f9fafb;
+  //       }
+  //     </style>
+  //   </head>
+  //   <body>
+  //     <div class="container">
+  //       <div class="header">
+  //         <a href="https://moneynowwealth.com" target="_blank">
+  //           <img src=""https://www.moneynowwealth.com/images/logo.png"" alt="MoneyNow Wealth" />
+  //         </a>
+  //         <h1>Welcome to MoneyNow Wealth </h1>
+  //       </div>
+  //       <div class="content">
+  //         <p>Hi <b>${newUser.firstname}</b>,</p>
+  //         <p>Thank you for joining <b>MoneyNow Wealth</b>! Your account has been created successfully.</p>
+  //         <p>Click the button below to sign in and start exploring:</p>
+  //         <div style="text-align: center;">
+  //           <a href="https://moneynowwealth.com/signin" class="btn">Sign In</a>
+  //         </div>
+  //         <p style="margin-top:20px;">If you did not register for this account, please ignore this email.</p>
+  //       </div>
+  //       <div class="footer">
+  //         &copy; ${new Date().getFullYear()} MoneyNow Wealth. All rights reserved.
+  //       </div>
+  //     </div>
+  //   </body>
+  // </html>
+  // `);
+  
+  await sendEmail(newUser.email, "Welcome to MoneyNow Wealth!", null, `<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Welcome to MoneyNow Wealth</title>
+    <style>
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: #eef2f7;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        max-width: 600px;
+        margin: 40px auto;
+        background: #ffffff;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+        border: 1px solid #d1d5db; /* subtle border around container */
+      }
+      .header {
+        background: linear-gradient(135deg, #140084, #5e00ff);
+        color: #fff;
+        text-align: center;
+        padding: 30px 20px;
+        border-bottom: 4px solid #fff; /* subtle separation border */
+      }
+      .header img {
+        width: 120px;
+        cursor: pointer;
+        margin-bottom: 15px;
+        border: 2px solid #ffffff; /* adds a crisp border around logo */
+        border-radius: 8px;
+        padding: 4px;
+      }
+      .header h1 {
+        margin: 0;
+        font-size: 28px;
+        font-weight: 700;
+      }
+      .content {
+        padding: 30px 25px;
+        color: #333333;
+        line-height: 1.7;
+        font-size: 16px;
+        border-top: 1px solid #e0e4e8; /* separates header from content */
+      }
+      .content p {
+        margin: 15px 0;
+      }
+      .btn {
+        display: inline-block;
+        margin: 25px auto 0 auto;
+        padding: 14px 28px;
+        background: #140084;
+        color: #ffffff !important;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: bold;
+        font-size: 16px;
+        transition: all 0.3s ease;
+        border: 2px solid #140084; /* adds border for better visual */
+      }
+      .btn:hover {
+        background: #5e00ff;
+        border-color: #5e00ff;
+      }
+      .footer {
+        text-align: center;
+        font-size: 13px;
+        color: #999999;
+        padding: 20px;
+        background: #f9fafb;
+        border-top: 1px solid #d1d5db; /* separates content from footer */
+      }
+      @media screen and (max-width: 480px) {
         .container {
-          max-width: 600px;
-          margin: 30px auto;
-          background: #ffffff;
-          border-radius: 10px;
-          overflow: hidden;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-        .header {
-          background: #140084;
-          color: #fff;
-          text-align: center;
-          padding: 30px 20px;
-        }
-        .header img {
-          width: 120px;
-          cursor: pointer;
+          margin: 20px 10px;
         }
         .header h1 {
-          margin: 15px 0 0;
           font-size: 24px;
         }
         .content {
-          padding: 30px 20px;
-          color: #333;
-          line-height: 1.6;
+          padding: 20px 15px;
+          font-size: 15px;
         }
         .btn {
-          display: inline-block;            /* inline-block so it fits content */
-          margin: 20px auto 0 auto;         /* center horizontally */
-          padding: 12px 25px;
-          background: #140084;
-          color: #fff;
-          text-decoration: none;
-          border-radius: 6px;
-          font-weight: bold;
-          text-align: center;               /* center text inside */
+          padding: 10px 20px;
+          font-size: 15px;
         }
-        .footer {
-          text-align: center;
-          font-size: 12px;
-          color: #888;
-          padding: 20px;
-          background: #f9fafb;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <a href="https://moneynowwealth.com" target="_blank">
-            <img src=""https://www.moneynowwealth.com/images/logo.png"" alt="MoneyNow Wealth" />
-          </a>
-          <h1>Welcome to MoneyNow Wealth </h1>
-        </div>
-        <div class="content">
-          <p>Hi <b>${newUser.firstname}</b>,</p>
-          <p>Thank you for joining <b>MoneyNow Wealth</b>! Your account has been created successfully.</p>
-          <p>Click the button below to sign in and start exploring:</p>
-          <div style="text-align: center;">
-            <a href="https://moneynowwealth.com/signin" class="btn">Sign In</a>
-          </div>
-          <p style="margin-top:20px;">If you did not register for this account, please ignore this email.</p>
-        </div>
-        <div class="footer">
-          &copy; ${new Date().getFullYear()} MoneyNow Wealth. All rights reserved.
-        </div>
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+      
+        <h1>Welcome to MoneyNow Wealth</h1>
       </div>
-    </body>
-  </html>
-  `);
-    
+      <div class="content">
+        <p>Hi <b>${newUser.firstname}</b>,</p>
+        <p>Thank you for joining <b>MoneyNow Wealth</b>! Your account has been created successfully.</p>
+        <p>Click the button below to sign in and start exploring:</p>
+        <div style="text-align: center;">
+          <a href="https://moneynowwealth.com/signin" class="btn">Sign In</a>
+        </div>
+        <p style="margin-top:20px;">If you did not register for this account, please ignore this email.</p>
+      </div>
+      <div class="footer">
+        &copy; ${new Date().getFullYear()} MoneyNow Wealth. All rights reserved.
+      </div>
+    </div>
+  </body>
+</html>
+`);
+
+
     //// if Admin want ton receive email on new user registration
     // sendEmail(
     //   process.env.ADMIN_EMAIL,
@@ -258,7 +376,6 @@ export const forgotPassword = async (req, res) => {
 };
 
 
-// Reset Password
 // Reset Password
 export const resetPassword = async (req, res) => {
   try {

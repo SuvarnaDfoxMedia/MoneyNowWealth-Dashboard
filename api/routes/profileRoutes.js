@@ -14,17 +14,33 @@ router.use(authMiddleware);
 router.get('/', getProfile);
 
 // PUT /api/profile - Update user profile
+// router.put(
+//   '/',
+//   uploadProfileImage,
+//   [
+//     body('name').optional().trim().isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
+//     body('phone').optional().trim().isLength({ min: 10 }).withMessage('Phone must be at least 10 characters'),
+//     body('address').optional().trim()
+//   ],
+//   updateProfile
+// );
+
 router.put(
   '/',
   uploadProfileImage,
   [
-    body('name').optional().trim().isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
-    body('phone').optional().trim().isLength({ min: 10 }).withMessage('Phone must be at least 10 characters'),
+    body('name')
+      .notEmpty().withMessage('Name is required')
+      .trim()
+      .isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
+    body('phone')
+      .optional()
+      .trim()
+      .isLength({ min: 10 }).withMessage('Phone must be at least 10 characters'),
     body('address').optional().trim()
   ],
   updateProfile
 );
-
 
 
 export default router;

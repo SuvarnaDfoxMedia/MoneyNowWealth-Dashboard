@@ -1,14 +1,23 @@
 import express from "express";
 import { addContact, getContacts, softDeleteContact } from "../controllers/contactController.js";
-import { protect, authorizeRoles } from "../middleware/authMiddleware.js";
+import { roleFromUrl } from "../middleware/roleUrlMiddleware.js";
 
 const router = express.Router();
 
-// Public route
+// Public route: anyone can submit a contact
 router.post("/contact", addContact);
 
-// Admin-only routes
-router.get("/contacts", protect, authorizeRoles("admin"), getContacts);
-router.delete("/contact/:id", protect, authorizeRoles("admin"), softDeleteContact);
+// Admin-only routes using role from URL
+router.get(
+  "/:role/contacts",
+  ...roleFromUrl(["admin"]),
+  getContacts
+);
+
+router.delete(
+  "/:role/contact/:id",
+  ...roleFromUrl(["admin"]),
+  softDeleteContact
+);
 
 export default router;

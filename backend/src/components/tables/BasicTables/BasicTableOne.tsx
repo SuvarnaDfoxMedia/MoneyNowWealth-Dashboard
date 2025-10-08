@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { FiMoreVertical, FiEdit, FiTrash2, FiPlus } from "react-icons/fi";
 
 interface Blog {
@@ -20,34 +20,29 @@ export default function BlogDataTable() {
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
 
-  const entriesPerPage = 10;
+  const { role } = useParams<{ role: string }>(); 
   const navigate = useNavigate();
   const API_BASE = "http://localhost:5000/api";
 
+  const entriesPerPage = 10;
   const indexOfLast = currentPage * entriesPerPage;
   const indexOfFirst = indexOfLast - entriesPerPage;
 
-  // Fetch blogs securely with cookies
+  // Fetch blogs
   const fetchData = async () => {
     try {
       const res = await fetch(`${API_BASE}/blogs?query=${encodeURIComponent(search)}`, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include", // SEND COOKIES with request
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
       });
-
       if (res.status === 401) {
         toast.error("Session expired. Please login again.");
-        navigate("/login");
+        navigate("/signin");
         return;
       }
-
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-
       const result = await res.json();
-      const allBlogs = Array.isArray(result) ? result : result.blogs || [];
-      setData(allBlogs);
+      setData(Array.isArray(result) ? result : result.blogs || []);
       setCurrentPage(1);
     } catch (err) {
       console.error(err);
@@ -62,29 +57,24 @@ export default function BlogDataTable() {
   const currentData = data.slice(indexOfFirst, indexOfLast);
   const totalPages = Math.ceil(data.length / entriesPerPage);
 
-  // Toggle blog status securely with cookie auth
+  // Toggle status
   const toggleStatus = async (id: string, currentStatus: number) => {
     try {
-      const res = await fetch(`${API_BASE}/blog/status/${id}`, {
+      const res = await fetch(`${API_BASE}/${role}/blog/status/${id}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include", // SEND COOKIES
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ status: currentStatus === 1 ? 0 : 1 }),
       });
-
       if (res.status === 401) {
         toast.error("Session expired. Please login again.");
-        navigate("/login");
+        navigate("/signin");
         return;
       }
-
       if (!res.ok) throw new Error("Failed to update status");
-
       const updated = await res.json();
-      setData((prev) =>
-        prev.map((blog) => (blog._id === id ? { ...blog, is_active: updated.blog.is_active } : blog))
+      setData(prev =>
+        prev.map(blog => (blog._id === id ? { ...blog, is_active: updated.blog.is_active } : blog))
       );
       toast.success("Status updated");
     } catch (err) {
@@ -93,37 +83,39 @@ export default function BlogDataTable() {
     }
   };
 
-  // Delete blog securely with cookie auth
+  // Delete blog
   const handleDelete = async () => {
     if (!deleteModalId) return;
+
     try {
-      const res = await fetch(`${API_BASE}/blog/${deleteModalId}`, {
+      const res = await fetch(`${API_BASE}/${role}/blog/${deleteModalId}`, {
         method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include", // SEND COOKIES
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
       });
 
       if (res.status === 401) {
         toast.error("Session expired. Please login again.");
-        navigate("/login");
+        navigate("/signin");
         return;
       }
 
-      if (!res.ok) throw new Error("Failed to delete blog");
+      if (!res.ok) {
+        const errMsg = await res.text();
+        throw new Error(errMsg || "Failed to delete blog");
+      }
 
-      setData((prev) => prev.filter((blog) => blog._id !== deleteModalId));
+      setData(prev => prev.filter(blog => blog._id !== deleteModalId));
       toast.success("Blog deleted successfully");
       setDeleteModalId(null);
       setOpenDropdownId(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error("Failed to delete blog");
+      toast.error(err.message || "Failed to delete blog");
     }
   };
 
-  // Close dropdown on outside click
+  // Dropdown
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
@@ -135,34 +127,21 @@ export default function BlogDataTable() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Dropdown portal for Edit/Delete buttons
   const Dropdown = ({ blogId, top, left }: { blogId: string; top: number; left: number }) => {
     return createPortal(
       <div
         className="absolute bg-white border rounded-xl shadow-lg z-50 animate-scaleIn dropdown-menu"
         style={{ top, left, width: "9rem" }}
       >
-        {/* <button
+        <button
           onClick={() => {
-            navigate(`/blog/edit/${blogId}`); 
+           navigate(`/${role}/blog/edit/${blogId}`);
             setOpenDropdownId(null);
           }}
           className="flex items-center gap-2 px-4 py-2 hover:bg-indigo-50 w-full text-left transition"
         >
           <FiEdit /> Edit
-        </button> */}
-
-
-        <button
-  onClick={() => {
-    navigate(`/blogs/edit/${blogId}`);
-    setOpenDropdownId(null);
-  }}
-  className="flex items-center gap-2 px-4 py-2 hover:bg-indigo-50 w-full text-left transition"
->
-  <FiEdit /> Edit
-</button>
-
+        </button>
 
         <button
           onClick={() => {
@@ -186,15 +165,16 @@ export default function BlogDataTable() {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-3xl font-bold text-gray-800">Blog Listing</h2>
-        <button
-          onClick={() => navigate("/addblog")}
-          className="bg-gradient-to-r from-[#043f79] to-[#0a68c1] text-white px-5 py-2 rounded-lg shadow-lg hover:scale-105 transition transform flex items-center gap-2"
-        >
-          <FiPlus /> Add Blog
-        </button>
+
+    <button
+  onClick={() => navigate(`/${role}/blogs/create`)}
+  className="bg-gradient-to-r from-[#043f79] to-[#0a68c1] text-white px-5 py-2 rounded-lg shadow-lg hover:scale-105 transition transform flex items-center gap-2"
+>
+  <FiPlus /> Add
+</button>
+
       </div>
 
       {/* Search */}
@@ -203,7 +183,7 @@ export default function BlogDataTable() {
           type="text"
           placeholder="Search by title..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={e => setSearch(e.target.value)}
           className="border rounded-lg px-3 py-2 w-full md:w-1/3 shadow-md focus:ring-2 focus:ring-indigo-500 outline-none transition"
         />
       </div>
@@ -222,48 +202,49 @@ export default function BlogDataTable() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {currentData.length === 0 && (
+            {currentData.length === 0 ? (
               <tr>
                 <td colSpan={6} className="text-center py-6 text-gray-400">
                   No blogs found
                 </td>
               </tr>
+            ) : (
+              currentData.map((blog, idx) => (
+                <tr key={blog._id} className="hover:bg-indigo-50 transition-all duration-200 relative">
+                  <td className="px-6 py-4">{indexOfFirst + idx + 1}</td>
+                  <td className="px-6 py-4 font-semibold text-gray-700">{blog.name}</td>
+                  <td className="px-6 py-4">
+                    <img
+                      src={`http://localhost:5000/uploads/blog/${blog.image}`}
+                      alt={blog.name}
+                      className="w-12 h-12 rounded-full object-cover shadow-md hover:scale-110 transition-transform"
+                    />
+                  </td>
+                  <td className="px-6 py-4">{new Date(blog.publish_date).toLocaleDateString()}</td>
+                  <td className="px-6 py-4 text-center">
+                    <button
+                      onClick={() => toggleStatus(blog._id, blog.is_active)}
+                      className={`px-4 py-1 rounded-sm text-white text-sm transition transform hover:scale-105 ${
+                        blog.is_active === 1 ? "bg-green-600 hover:bg-green-700" : "bg-gray-400 hover:bg-gray-500"
+                      }`}
+                    >
+                      {blog.is_active === 1 ? "Active" : "Deactive"}
+                    </button>
+                  </td>
+                  <td className="px-6 py-4 text-center relative z-10">
+                    <button
+                      onClick={e => handleDropdownClick(e, blog._id)}
+                      className="p-2 rounded-full hover:bg-gray-100 transition dropdown-trigger"
+                    >
+                      <FiMoreVertical size={18} />
+                    </button>
+                    {openDropdownId === blog._id && (
+                      <Dropdown blogId={blog._id} top={dropdownPos.top} left={dropdownPos.left} />
+                    )}
+                  </td>
+                </tr>
+              ))
             )}
-            {currentData.map((blog, idx) => (
-              <tr key={blog._id} className="hover:bg-indigo-50 transition-all duration-200 relative">
-                <td className="px-6 py-4">{indexOfFirst + idx + 1}</td>
-                <td className="px-6 py-4 font-semibold text-gray-700">{blog.name}</td>
-                <td className="px-6 py-4">
-                  <img
-                    src={`http://localhost:5000/uploads/blog/${blog.image}`}
-                    alt={blog.name}
-                    className="w-12 h-12 rounded-full object-cover shadow-md hover:scale-110 transition-transform"
-                  />
-                </td>
-                <td className="px-6 py-4">{new Date(blog.publish_date).toLocaleDateString()}</td>
-                <td className="px-6 py-4 text-center">
-                  <button
-                    onClick={() => toggleStatus(blog._id, blog.is_active)}
-                    className={`px-4 py-1 rounded-sm text-white text-sm transition transform hover:scale-105 ${
-                      blog.is_active === 1 ? "bg-green-600 hover:bg-green-700" : "bg-gray-400 hover:bg-gray-500"
-                    }`}
-                  >
-                    {blog.is_active === 1 ? "Active" : "Deactive"}
-                  </button>
-                </td>
-                <td className="px-6 py-4 text-center relative z-10">
-                  <button
-                    onClick={(e) => handleDropdownClick(e, blog._id)}
-                    className="p-2 rounded-full hover:bg-gray-100 transition dropdown-trigger"
-                  >
-                    <FiMoreVertical size={18} />
-                  </button>
-                  {openDropdownId === blog._id && (
-                    <Dropdown blogId={blog._id} top={dropdownPos.top} left={dropdownPos.left} />
-                  )}
-                </td>
-              </tr>
-            ))}
           </tbody>
         </table>
       </div>
@@ -275,7 +256,7 @@ export default function BlogDataTable() {
         </p>
         <div className="flex gap-2 flex-wrap">
           <button
-            onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+            onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
             disabled={currentPage === 1}
             className="px-3 py-1 rounded-lg disabled:opacity-50 bg-gradient-to-r from-[#043f79] to-[#0a68c1] text-white hover:opacity-90 transition"
           >
@@ -295,7 +276,7 @@ export default function BlogDataTable() {
             </button>
           ))}
           <button
-            onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+            onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
             disabled={currentPage === totalPages || totalPages === 0}
             className="px-3 py-1 rounded-lg disabled:opacity-50 bg-gradient-to-r from-[#043f79] to-[#0a68c1] text-white hover:opacity-90 transition"
           >
@@ -312,7 +293,7 @@ export default function BlogDataTable() {
         >
           <div
             className="bg-white rounded-2xl shadow-xl w-96 p-6 scale-95 animate-scaleIn"
-            onClick={(e) => e.stopPropagation()}
+            onClick={e => e.stopPropagation()}
           >
             <h3 className="text-lg font-semibold mb-4">Are you sure you want to delete this blog?</h3>
             <div className="flex justify-end gap-4">

@@ -7,12 +7,23 @@ export const saveBlog = async (req, res) => {
     const { id } = req.params;
     const data = req.body;
 
-    // Validate required fields
-    if (!data.name || !data.slug || (!req.file && !id)) {
-      const errors = {};
-      if (!data.name) errors.name = "Title is required";
-      if (!data.slug) errors.slug = "Slug is required";
-      if (!req.file && !id) errors.image = "Image is required"; // only required for create
+    // Validation
+    const errors = {};
+    if (!data.name || data.name.trim() === "") errors.name = "Title is required";
+    if (!data.slug || data.slug.trim() === "") errors.slug = "Slug is required";
+    if (!data.description || data.description.trim() === "") errors.description = "Description is required";
+    if (!data.date || data.date.trim() === "") errors.date = "Publish Date is required";
+    if (!req.file && !id) errors.image = "Image is required"; // only required on create
+
+    // Duplicate name check
+    if (data.name && data.name.trim() !== "") {
+      const existing = await Blog.findOne({ name: data.name.trim() });
+      if (existing && (!id || existing._id.toString() !== id)) {
+        errors.name = "Blog title already exists";
+      }
+    }
+
+    if (Object.keys(errors).length > 0) {
       return res.status(400).json({ success: false, errors });
     }
 
@@ -20,39 +31,52 @@ export const saveBlog = async (req, res) => {
     let blog;
 
     if (!id) {
-      // Create
+      // Create new blog
       blog = new Blog({
-        ...data,
+        name: data.name.trim(),
         slug,
-        user_id: req.user?.id,
+        title_tag: data.title_tag || "",
+        alt_tag: data.alt_tag || "",
+        description: data.description,
+        seo_title: data.seo_title || "",
+        seo_meta_description: data.seo_meta_description || "",
+        seo_keywords: data.seo_keywords || "",
+        page_schema: data.page_schema || "",
+        og_tags: data.og_tags || "",
         for_home: data.for_home || "No",
-        publish_date: data.date || new Date(),
+        publish_date: data.date,
         image: req.file?.filename || "",
+        user_id: req.user?.id,
       });
     } else {
-      // Update
+      // Update existing blog
       blog = await Blog.findById(id);
       if (!blog) return res.status(404).json({ success: false, message: "Blog not found" });
 
-      blog.name = data.name;
+      blog.name = data.name.trim();
       blog.slug = slug;
       blog.title_tag = data.title_tag || "";
       blog.alt_tag = data.alt_tag || "";
-      blog.description = data.description || "";
+      blog.description = data.description;
       blog.seo_title = data.seo_title || "";
       blog.seo_meta_description = data.seo_meta_description || "";
       blog.seo_keywords = data.seo_keywords || "";
       blog.page_schema = data.page_schema || "";
       blog.og_tags = data.og_tags || "";
       blog.for_home = data.for_home || "No";
-      blog.publish_date = data.date || new Date();
+      blog.publish_date = data.date;
 
-      if (req.file) blog.image = req.file.filename; // optional image update
+      if (req.file) blog.image = req.file.filename; // optional on update
     }
 
     await blog.save();
     res.json({ success: true, blog });
   } catch (err) {
+    // Handle Mongo duplicate key error (fallback)
+    if (err.code === 11000 && err.keyPattern?.name) {
+      return res.status(400).json({ success: false, errors: { name: "Blog title already exists" } });
+    }
+
     res.status(500).json({ success: false, message: err.message });
   }
 };

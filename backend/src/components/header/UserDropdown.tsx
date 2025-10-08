@@ -41,6 +41,9 @@ export default function UserDropdown() {
     ? `${backendUrl}${user.profileImage}?v=${imageVersion}`
     : "/images/user/owner.jpg";
 
+  // Get role dynamically
+  const role = user?.role || "user";
+
   return (
     <div className="relative">
       <button onClick={toggleDropdown} className="flex items-center text-gray-700">
@@ -57,10 +60,22 @@ export default function UserDropdown() {
         </div>
         <ul className="flex flex-col gap-1 pt-4 pb-3 border-b">
           <li>
-            <DropdownItem tag="a" to="/profile" onItemClick={closeDropdown}>Edit profile</DropdownItem>
+            <DropdownItem
+              tag="a"
+              to={`/${role}/profile`}   // Dynamic role-based path
+              onItemClick={closeDropdown}
+            >
+              Edit profile
+            </DropdownItem>
           </li>
           <li>
-            <DropdownItem tag="a" to="/change-password" onItemClick={closeDropdown}>Change Password</DropdownItem>
+            <DropdownItem
+              tag="a"
+              to={`/${role}/change-password`} // Dynamic role-based path
+              onItemClick={closeDropdown}
+            >
+              Change Password
+            </DropdownItem>
           </li>
         </ul>
         <DropdownItem tag="button" onItemClick={handleLogout}>Sign out</DropdownItem>

@@ -32,39 +32,29 @@ export default function AddContactEnquiry() {
     }
 
     try {
-      const token = localStorage.getItem("token") || ""; // JWT token for admin-only API
-
       const res = await fetch(`${API_BASE}/contact`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token && { Authorization: `Bearer ${token}` }),
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
 
-      const data = await res.json();
-
-      if (res.status === 401) {
-        toast.error("Unauthorized. Please login to submit contact.");
-        navigate("/login");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.message || "Failed to submit enquiry");
         return;
       }
 
-      if (res.ok) {
-        toast.success("Your enquiry has been submitted successfully!");
-        setFormData({
-          fullName: "",
-          email: "",
-          mobile: "",
-          subject: "Support",
-          message: "",
-        });
-        // Optionally redirect to listing
-        navigate("/contactenquiry");
-      } else {
-        toast.error(data.message || "Failed to submit enquiry");
-      }
+      toast.success("Your enquiry has been submitted successfully!");
+      setFormData({
+        fullName: "",
+        email: "",
+        mobile: "",
+        subject: "Support",
+        message: "",
+      });
+
+      // Redirect to listing page
+      navigate("/contactenquiry");
     } catch (err) {
       console.error(err);
       toast.error("Something went wrong!");
@@ -78,7 +68,7 @@ export default function AddContactEnquiry() {
         <h2 className="text-2xl font-bold">Contact Us</h2>
         <button
           type="button"
-          onClick={() => navigate("/contactenquiry")}
+          onClick={() => navigate("/contactenquiry")} // Back to listing
           className="px-4 py-2 rounded-lg bg-gradient-to-r from-[#043f79] to-[#0a68c1] text-white flex items-center gap-2 hover:opacity-90 transition transform hover:scale-105"
         >
           <FiArrowLeft /> Back

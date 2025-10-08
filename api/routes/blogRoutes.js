@@ -1,3 +1,4 @@
+
 // import express from "express";
 // import multer from "multer";
 // import path from "path";
@@ -9,6 +10,7 @@
 //   deleteBlog,
 //   searchBlogs,
 // } from "../controllers/blogController.js";
+// import { protect, authorizeRoles } from "../middleware/authMiddleware.js";
 
 // const router = express.Router();
 
@@ -17,18 +19,46 @@
 
 // const storage = multer.diskStorage({
 //   destination: uploadDir,
-//   filename: (req, file, cb) => cb(null, "Bi_" + Date.now() + "_" + file.originalname),
+//   filename: (req, file, cb) =>
+//     cb(null, "Bi_" + Date.now() + "_" + file.originalname),
 // });
 // const upload = multer({ storage });
 
 // router.get("/blog/:id", getBlogById);
-// router.get("/blogs", searchBlogs); 
-// router.post("/blog", upload.single("image"), saveBlog); 
-// router.put("/blog/:id", upload.single("image"), saveBlog); 
-// router.put("/blog/status/:id", changeStatus); 
-// router.delete("/blog/:id", deleteBlog); 
+// router.get("/blogs", searchBlogs);
+
+// router.post(
+//   "/blog",
+//   protect,
+//   authorizeRoles("admin", "editor"),
+//   upload.single("image"),
+//   saveBlog
+// );
+
+// router.put(
+//   "/blog/:id",
+//   protect,
+//   authorizeRoles("admin", "editor"),
+//   upload.single("image"),
+//   saveBlog
+// );
+
+// router.put(
+//   "/blog/status/:id",
+//   protect,
+//   authorizeRoles("admin", "editor"),
+//   changeStatus
+// );
+
+// router.delete(
+//   "/blog/:id",
+//   protect,
+//   authorizeRoles("admin", "editor"),
+//   deleteBlog
+// );
 
 // export default router;
+
 
 
 import express from "express";
@@ -42,7 +72,7 @@ import {
   deleteBlog,
   searchBlogs,
 } from "../controllers/blogController.js";
-import { protect, authorizeRoles } from "../middleware/authMiddleware.js";
+import { roleFromUrl } from "../middleware/roleUrlMiddleware.js";
 
 const router = express.Router();
 
@@ -56,36 +86,34 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
+
 router.get("/blog/:id", getBlogById);
 router.get("/blogs", searchBlogs);
 
+
 router.post(
-  "/blog",
-  protect,
-  authorizeRoles("admin", "editor"),
+  "/:role/blog/create",
+  ...roleFromUrl(["admin", "editor"]),
   upload.single("image"),
   saveBlog
 );
 
 router.put(
-  "/blog/:id",
-  protect,
-  authorizeRoles("admin", "editor"),
+  "/:role/blog/:id",
+  ...roleFromUrl(["admin", "editor"]),
   upload.single("image"),
   saveBlog
 );
 
 router.put(
-  "/blog/status/:id",
-  protect,
-  authorizeRoles("admin", "editor"),
+  "/:role/blog/status/:id",
+  ...roleFromUrl(["admin", "editor"]),
   changeStatus
 );
 
 router.delete(
-  "/blog/:id",
-  protect,
-  authorizeRoles("admin", "editor"),
+  "/:role/blog/:id",
+  ...roleFromUrl(["admin", "editor"]),
   deleteBlog
 );
 
