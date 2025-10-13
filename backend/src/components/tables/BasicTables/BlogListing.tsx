@@ -65,10 +65,10 @@ export default function BlogDataTable() {
         const blogResult = await blogRes.json();
 
         const blogs: Blog[] = (Array.isArray(blogResult) ? blogResult : blogResult.blogs || []).map(blog => {
-          const catId = blog.categoryId ? blog.categoryId.toString() : "";
+          // const catId = blog.categoryId ? blog.categoryId.toString() : "";
           return {
             ...blog,
-            categoryName: catId ? categoryMap.get(catId) || "-" : "-",
+            categoryName: blog.categoryId ? blog.categoryId.name || "-" : "-",
           };
         });
 

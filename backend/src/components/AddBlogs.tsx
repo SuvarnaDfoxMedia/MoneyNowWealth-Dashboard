@@ -110,7 +110,7 @@ export default function AddBlog() {
           ogTag: blog.og_tags || "",
           forHome: blog.for_home === "Yes",
           date: blog.publish_date ? new Date(blog.publish_date) : new Date(),
-          categoryId: blog.categoryId || "",
+          categoryId: blog.categoryId._id || "",
         });
 
         setDescription(blog.description || "");
@@ -196,6 +196,7 @@ export default function AddBlog() {
       payload.append("for_home", formData.forHome ? "Yes" : "No");
       payload.append("date", formData.date.toISOString());
       payload.append("categoryId", formData.categoryId);
+     
       if (formData.image) payload.append("image", formData.image);
 
       const url = id
