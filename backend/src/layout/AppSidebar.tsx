@@ -45,7 +45,7 @@ const AppSidebar: React.FC = () => {
 
   {
     icon: <ListIcon />,
-    name: "Blog",
+    name: "Blog1",
     path: `/${role}/blogs`,
     roles: ["admin", "editor"],
   },
