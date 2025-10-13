@@ -3,25 +3,25 @@ import axios from "axios";
 
 interface User {
   id: string;
-  firstname: string;
-  lastname: string;
-  email: string;
-  role: string;
+  firstname?: string;
+  lastname?: string;
+  name?: string;
+  email?: string;
+  role?: string;
+  profileImage?: string | null;
 }
 
 interface AuthContextType {
-  token: string | null;
   user: User | null;
   loading: boolean;
-  setAuth: (token: string, user: User) => void;
-  clearAuth: () => void;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [token, setToken] = useState(localStorage.getItem("token"));
   const [user, setUser] = useState<User | null>(
     localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")!) : null
   );
@@ -29,48 +29,61 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
-  const setAuth = (token: string, user: User) => {
-    setToken(token);
-    setUser(user);
-    localStorage.setItem("token", token);
-    localStorage.setItem("user", JSON.stringify(user));
-    console.log("setAuth called:", { token, user });
-  };
-
   const clearAuth = () => {
-    setToken(null);
     setUser(null);
-    localStorage.removeItem("token");
     localStorage.removeItem("user");
-    console.log("clearAuth called");
   };
 
   const refreshUser = async () => {
-    if (!token) return;
-    setLoading(true);
     try {
-      const res = await axios.get(`${backendUrl}/api/auth/profile`, { withCredentials: true });
-      setUser(res.data.user || res.data);
-      localStorage.setItem("user", JSON.stringify(res.data.user || res.data));
+      const res = await axios.get(`${backendUrl}/api/profile`, { withCredentials: true });
+      setUser(res.data);
+      localStorage.setItem("user", JSON.stringify(res.data));
     } catch (err) {
-      console.error("Failed to refresh user profile:", err);
       clearAuth();
-    } finally {
-      setLoading(false);
     }
   };
 
-  // On mount, fetch user if token exists
-  useEffect(() => {
-    if (token && !user) {
-      refreshUser();
-    } else {
-      setLoading(false);
+  const login = async (email: string, password: string) => {
+    try {
+      // Backend sets httpOnly cookie
+      const res = await axios.post(
+        `${backendUrl}/api/auth/login`,
+        { email, password },
+        { withCredentials: true }
+      );
+
+      if (!res.data.user) throw new Error("Invalid email or password");
+
+      setUser(res.data.user);
+      localStorage.setItem("user", JSON.stringify(res.data.user));
+    } catch (err: any) {
+      clearAuth();
+      const msg = err.response?.data?.message || "Invalid email or password";
+      throw new Error(msg);
     }
+  };
+
+  const logout = async () => {
+    try {
+      await axios.post(`${backendUrl}/api/auth/logout`, {}, { withCredentials: true });
+    } catch (err) {
+      console.error("Logout failed", err);
+    } finally {
+      clearAuth();
+    }
+  };
+
+  useEffect(() => {
+    const init = async () => {
+      await refreshUser();
+      setLoading(false);
+    };
+    init();
   }, []);
 
   return (
-    <AuthContext.Provider value={{ token, user, loading, setAuth, clearAuth, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

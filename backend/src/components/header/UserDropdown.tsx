@@ -1,14 +1,16 @@
+
+
 import { useState, useEffect } from "react";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { useNavigate } from "react-router";
 import axios from "axios";
 import { toast } from "react-hot-toast";
-import { useUser } from "../../context/UserContext";
+import { useAuth } from "../../context/AuthContext"; // <-- use this
 
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
-  const { user, refreshUser } = useUser();
+  const { user, refreshUser, logout } = useAuth(); // <-- use useAuth
   const [imageVersion, setImageVersion] = useState(Date.now());
   const navigate = useNavigate();
 
@@ -20,9 +22,8 @@ export default function UserDropdown() {
   const handleLogout = async () => {
     closeDropdown();
     try {
-      const res = await axios.post(`${backendUrl}/api/auth/logout`, {}, { withCredentials: true });
-      await refreshUser(); // clear user context
-      toast.success(res.data.message || "Logged out successfully!");
+      await logout(); // <-- use logout from AuthContext
+      toast.success("Logged out successfully!");
       navigate("/signin");
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Logout failed");
@@ -41,8 +42,17 @@ export default function UserDropdown() {
     ? `${backendUrl}${user.profileImage}?v=${imageVersion}`
     : "/images/user/owner.jpg";
 
-  // Get role dynamically
   const role = user?.role || "user";
+
+  // Role-aware navigation
+  const handleNavigation = (page: "profile" | "change-password") => {
+    closeDropdown();
+    if (role === "user") {
+      navigate(`/user/${page}`);
+    } else {
+      navigate(`/${role}/${page}`);
+    }
+  };
 
   return (
     <div className="relative">
@@ -58,27 +68,23 @@ export default function UserDropdown() {
           <span className="font-medium">{fullName}</span>
           <span className="block text-sm text-gray-500">{user?.email ?? "email@example.com"}</span>
         </div>
+
         <ul className="flex flex-col gap-1 pt-4 pb-3 border-b">
           <li>
-            <DropdownItem
-              tag="a"
-              to={`/${role}/profile`}   // Dynamic role-based path
-              onItemClick={closeDropdown}
-            >
-              Edit profile
+            <DropdownItem tag="button" onItemClick={() => handleNavigation("profile")}>
+              Edit Profile
             </DropdownItem>
           </li>
           <li>
-            <DropdownItem
-              tag="a"
-              to={`/${role}/change-password`} // Dynamic role-based path
-              onItemClick={closeDropdown}
-            >
+            <DropdownItem tag="button" onItemClick={() => handleNavigation("change-password")}>
               Change Password
             </DropdownItem>
           </li>
         </ul>
-        <DropdownItem tag="button" onItemClick={handleLogout}>Sign out</DropdownItem>
+
+        <DropdownItem tag="button" onItemClick={handleLogout}>
+          Sign out
+        </DropdownItem>
       </Dropdown>
     </div>
   );

@@ -15,8 +15,13 @@ const blogSchema = new mongoose.Schema(
     page_schema: String,
     og_tags: String,
     image: String,
-    publish_date: { type: Date }, // New field
-    is_active: { type: Number, default: 1 }, // 1 = active, 0 = inactive, 2 = deleted
+    publish_date: { type: Date }, 
+    is_active: { type: Number, default: 1 }, 
+    categoryId: { 
+      type: mongoose.Schema.Types.ObjectId, 
+      ref: "BlogCategory",  
+      required: true 
+    },
   },
   { timestamps: true }
 );

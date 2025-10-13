@@ -54,7 +54,6 @@ export default function SignUpForm() {
 
   if (!validateFields()) return;
 
-  // show pending message immediately
   const toastId = toast.loading("Registering...");
 
   try {
@@ -95,7 +94,6 @@ export default function SignUpForm() {
             <p className="text-sm text-gray-500 dark:text-gray-400">Enter your details to create a new account.</p>
           </div>
 
-          {/* IMPORTANT: noValidate disables browser's native validation UI */}
           <form onSubmit={handleSignup} noValidate>
             <div className="space-y-5">
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">

@@ -4,23 +4,22 @@ import { toast } from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 import { FiMoreVertical, FiEdit, FiTrash2, FiPlus } from "react-icons/fi";
 
-interface Blog {
+interface Category {
   _id: string;
   name: string;
   image: string;
-  publish_date: string;
   is_active: number;
 }
 
-export default function BlogDataTable() {
-  const [data, setData] = useState<Blog[]>([]);
+export default function BlogCategoryListing() {
+  const [data, setData] = useState<Category[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
   const [deleteModalId, setDeleteModalId] = useState<string | null>(null);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
 
-  const { role } = useParams<{ role: string }>(); 
+  const { role } = useParams<{ role: string }>();
   const navigate = useNavigate();
   const API_BASE = "http://localhost:5000/api";
 
@@ -28,25 +27,21 @@ export default function BlogDataTable() {
   const indexOfLast = currentPage * entriesPerPage;
   const indexOfFirst = indexOfLast - entriesPerPage;
 
-  // Fetch blogs
+  // Fetch categories
   const fetchData = async () => {
     try {
-      const res = await fetch(`${API_BASE}/blogs?query=${encodeURIComponent(search)}`, {
+      const res = await fetch(`${API_BASE}/categories?query=${encodeURIComponent(search)}`, {
         headers: { "Content-Type": "application/json" },
         credentials: "include",
       });
-      if (res.status === 401) {
-        toast.error("Session expired. Please login again.");
-        navigate("/signin");
-        return;
-      }
+
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const result = await res.json();
-      setData(Array.isArray(result) ? result : result.blogs || []);
+      setData(result.categories || []);
       setCurrentPage(1);
     } catch (err) {
       console.error(err);
-      toast.error("Failed to fetch blogs");
+      toast.error("Failed to fetch categories");
     }
   };
 
@@ -57,24 +52,19 @@ export default function BlogDataTable() {
   const currentData = data.slice(indexOfFirst, indexOfLast);
   const totalPages = Math.ceil(data.length / entriesPerPage);
 
-  // Toggle status
+  // Toggle status (using update endpoint)
   const toggleStatus = async (id: string, currentStatus: number) => {
     try {
-      const res = await fetch(`${API_BASE}/${role}/blog/status/${id}`, {
+      const res = await fetch(`${API_BASE}/${role}/blogcategory/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ status: currentStatus === 1 ? 0 : 1 }),
+        body: JSON.stringify({ is_active: currentStatus === 1 ? 0 : 1 }),
+        headers: { "Content-Type": "application/json" },
       });
-      if (res.status === 401) {
-        toast.error("Session expired. Please login again.");
-        navigate("/signin");
-        return;
-      }
       if (!res.ok) throw new Error("Failed to update status");
       const updated = await res.json();
       setData(prev =>
-        prev.map(blog => (blog._id === id ? { ...blog, is_active: updated.blog.is_active } : blog))
+        prev.map(cat => (cat._id === id ? { ...cat, is_active: updated.category.is_active } : cat))
       );
       toast.success("Status updated");
     } catch (err) {
@@ -83,39 +73,27 @@ export default function BlogDataTable() {
     }
   };
 
-  // Delete blog
+  // Delete category
   const handleDelete = async () => {
     if (!deleteModalId) return;
-
     try {
-      const res = await fetch(`${API_BASE}/${role}/blog/${deleteModalId}`, {
+      const res = await fetch(`${API_BASE}/${role}/blogcategory/${deleteModalId}`, {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
         credentials: "include",
+        headers: { "Content-Type": "application/json" },
       });
-
-      if (res.status === 401) {
-        toast.error("Session expired. Please login again.");
-        navigate("/signin");
-        return;
-      }
-
-      if (!res.ok) {
-        const errMsg = await res.text();
-        throw new Error(errMsg || "Failed to delete blog");
-      }
-
-      setData(prev => prev.filter(blog => blog._id !== deleteModalId));
-      toast.success("Blog deleted successfully");
+      if (!res.ok) throw new Error("Failed to delete category");
+      setData(prev => prev.filter(cat => cat._id !== deleteModalId));
+      toast.success("Category deleted successfully");
       setDeleteModalId(null);
       setOpenDropdownId(null);
     } catch (err: any) {
       console.error(err);
-      toast.error(err.message || "Failed to delete blog");
+      toast.error(err.message || "Failed to delete category");
     }
   };
 
-  // Dropdown
+  // Close dropdown on click outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
@@ -127,7 +105,7 @@ export default function BlogDataTable() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const Dropdown = ({ blogId, top, left }: { blogId: string; top: number; left: number }) => {
+  const Dropdown = ({ categoryId, top, left }: { categoryId: string; top: number; left: number }) => {
     return createPortal(
       <div
         className="absolute bg-white border rounded-xl shadow-lg z-50 animate-scaleIn dropdown-menu"
@@ -135,17 +113,16 @@ export default function BlogDataTable() {
       >
         <button
           onClick={() => {
-           navigate(`/${role}/blog/edit/${blogId}`);
+            navigate(`/${role}/blogcategories/edit/${categoryId}`);
             setOpenDropdownId(null);
           }}
           className="flex items-center gap-2 px-4 py-2 hover:bg-indigo-50 w-full text-left transition"
         >
           <FiEdit /> Edit
         </button>
-
         <button
           onClick={() => {
-            setDeleteModalId(blogId);
+            setDeleteModalId(categoryId);
             setOpenDropdownId(null);
           }}
           className="flex items-center gap-2 px-4 py-2 hover:bg-red-50 w-full text-left text-red-600 transition"
@@ -157,31 +134,30 @@ export default function BlogDataTable() {
     );
   };
 
-  const handleDropdownClick = (e: React.MouseEvent<HTMLButtonElement>, blogId: string) => {
+  const handleDropdownClick = (e: React.MouseEvent<HTMLButtonElement>, categoryId: string) => {
     const rect = e.currentTarget.getBoundingClientRect();
     setDropdownPos({ top: rect.bottom + window.scrollY, left: rect.right - 144 });
-    setOpenDropdownId(openDropdownId === blogId ? null : blogId);
+    setOpenDropdownId(openDropdownId === categoryId ? null : categoryId);
   };
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
+      {/* Header */}
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-3xl font-bold text-gray-800">Blog Listing</h2>
-
-    <button
-  onClick={() => navigate(`/${role}/blogs/create`)}
-  className="bg-gradient-to-r from-[#043f79] to-[#0a68c1] text-white px-5 py-2 rounded-lg shadow-lg hover:scale-105 transition transform flex items-center gap-2"
->
-  <FiPlus /> Add
-</button>
-
+        <h2 className="text-3xl font-bold text-gray-800">Blog Categories</h2>
+        <button
+          onClick={() => navigate(`/${role}/blogcategories/create`)}
+          className="bg-gradient-to-r from-[#043f79] to-[#0a68c1] text-white px-5 py-2 rounded-lg shadow-lg hover:scale-105 transition transform flex items-center gap-2"
+        >
+          <FiPlus /> Add
+        </button>
       </div>
 
       {/* Search */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-2">
         <input
           type="text"
-          placeholder="Search by title..."
+          placeholder="Search by name..."
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="border rounded-lg px-3 py-2 w-full md:w-1/3 shadow-md focus:ring-2 focus:ring-indigo-500 outline-none transition"
@@ -194,9 +170,8 @@ export default function BlogDataTable() {
           <thead className="bg-gradient-to-r from-[#043f79] to-[#0a68c1] text-white">
             <tr>
               <th className="px-6 py-3 text-left text-sm font-medium first:rounded-tl-xl last:rounded-tr-xl">#</th>
-              <th className="px-6 py-3 text-left text-sm font-medium">Title</th>
+              <th className="px-6 py-3 text-left text-sm font-medium">Name</th>
               <th className="px-6 py-3 text-left text-sm font-medium">Image</th>
-              <th className="px-6 py-3 text-left text-sm font-medium">Publish Date</th>
               <th className="px-6 py-3 text-left text-sm font-medium">Status</th>
               <th className="px-6 py-3 text-left text-sm font-medium">Actions</th>
             </tr>
@@ -204,42 +179,43 @@ export default function BlogDataTable() {
           <tbody className="divide-y divide-gray-100">
             {currentData.length === 0 ? (
               <tr>
-                <td colSpan={6} className="text-center py-6 text-gray-400">
-                  No blogs found
+                <td colSpan={5} className="text-center py-6 text-gray-400">
+                  No categories found
                 </td>
               </tr>
             ) : (
-              currentData.map((blog, idx) => (
-                <tr key={blog._id} className="hover:bg-indigo-50 transition-all duration-200 relative">
+              currentData.map((cat, idx) => (
+                <tr key={cat._id} className="hover:bg-indigo-50 transition-all duration-200 relative">
                   <td className="px-6 py-4">{indexOfFirst + idx + 1}</td>
-                  <td className="px-6 py-4 font-semibold text-gray-700">{blog.name}</td>
+                  <td className="px-6 py-4 font-semibold text-gray-700">{cat.name}</td>
                   <td className="px-6 py-4">
-                    <img
-                      src={`http://localhost:5000/uploads/blog/${blog.image}`}
-                      alt={blog.name}
-                      className="w-12 h-12 rounded-full object-cover shadow-md hover:scale-110 transition-transform"
-                    />
+                    {cat.image && (
+                      <img
+                        src={`http://localhost:5000/uploads/category/${cat.image}`}
+                        alt={cat.name}
+                        className="w-12 h-12 rounded-full object-cover shadow-md hover:scale-110 transition-transform"
+                      />
+                    )}
                   </td>
-                  <td className="px-6 py-4">{new Date(blog.publish_date).toLocaleDateString()}</td>
                   <td className="px-6 py-4 text-center">
                     <button
-                      onClick={() => toggleStatus(blog._id, blog.is_active)}
+                      onClick={() => toggleStatus(cat._id, cat.is_active)}
                       className={`px-4 py-1 rounded-sm text-white text-sm transition transform hover:scale-105 ${
-                        blog.is_active === 1 ? "bg-green-600 hover:bg-green-700" : "bg-gray-400 hover:bg-gray-500"
+                        cat.is_active === 1 ? "bg-green-600 hover:bg-green-700" : "bg-gray-400 hover:bg-gray-500"
                       }`}
                     >
-                      {blog.is_active === 1 ? "Active" : "Deactive"}
+                      {cat.is_active === 1 ? "Active" : "Deactive"}
                     </button>
                   </td>
                   <td className="px-6 py-4 text-center relative z-10">
                     <button
-                      onClick={e => handleDropdownClick(e, blog._id)}
+                      onClick={e => handleDropdownClick(e, cat._id)}
                       className="p-2 rounded-full hover:bg-gray-100 transition dropdown-trigger"
                     >
                       <FiMoreVertical size={18} />
                     </button>
-                    {openDropdownId === blog._id && (
-                      <Dropdown blogId={blog._id} top={dropdownPos.top} left={dropdownPos.left} />
+                    {openDropdownId === cat._id && (
+                      <Dropdown categoryId={cat._id} top={dropdownPos.top} left={dropdownPos.left} />
                     )}
                   </td>
                 </tr>
@@ -295,7 +271,7 @@ export default function BlogDataTable() {
             className="bg-white rounded-2xl shadow-xl w-96 p-6 scale-95 animate-scaleIn"
             onClick={e => e.stopPropagation()}
           >
-            <h3 className="text-lg font-semibold mb-4">Are you sure you want to delete this blog?</h3>
+            <h3 className="text-lg font-semibold mb-4">Are you sure you want to delete this category?</h3>
             <div className="flex justify-end gap-4">
               <button
                 onClick={() => setDeleteModalId(null)}

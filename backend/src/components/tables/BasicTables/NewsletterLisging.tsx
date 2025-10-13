@@ -8,7 +8,7 @@ interface Newsletter {
   _id: string;
   name: string;
   email: string;
-  publish_date: string;
+  createdAt: string; // use createdAt instead of publish_date
   is_deleted?: boolean;
 }
 
@@ -41,12 +41,6 @@ export default function NewsletterListing() {
         headers: { "Content-Type": "application/json" },
         credentials: "include",
       });
-
-      if (res.status === 401) {
-        toast.error("Session expired. Please login again.");
-        navigate("/signin");
-        return;
-      }
 
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const result = await res.json();
@@ -90,12 +84,6 @@ export default function NewsletterListing() {
 
       const data = await res.json();
 
-      if (res.status === 401) {
-        toast.error("Unauthorized action. Please login.");
-        navigate("/signin");
-        return;
-      }
-
       if (res.ok) {
         toast.success(data.message || "Newsletter deleted successfully");
         fetchData();
@@ -137,7 +125,6 @@ export default function NewsletterListing() {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-3xl font-bold text-gray-800">Newsletter Listing</h2>
         <button
@@ -148,18 +135,6 @@ export default function NewsletterListing() {
         </button>
       </div>
 
-      {/* Search */}
-      <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-2">
-        <input
-          type="text"
-          placeholder="Search by title or email..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="border rounded-lg px-3 py-2 w-full md:w-1/3 shadow-md focus:ring-2 focus:ring-indigo-500 outline-none transition"
-        />
-      </div>
-
-      {/* Table */}
       <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-x-auto">
         <table className="min-w-full border-collapse">
           <thead className="bg-gradient-to-r from-[#043f79] to-[#0a68c1] text-white">
@@ -184,7 +159,7 @@ export default function NewsletterListing() {
                 <td className="px-6 py-4">{indexOfFirst + idx + 1}</td>
                 <td className="px-6 py-4 font-semibold text-gray-700">{item.name}</td>
                 <td className="px-6 py-4 text-gray-600">{item.email}</td>
-                <td className="px-6 py-4">{new Date(item.publish_date).toLocaleDateString()}</td>
+                <td className="px-6 py-4">{new Date(item.createdAt).toLocaleString()}</td>
                 <td className="px-6 py-4 text-center relative">
                   <button
                     onClick={(e) => handleDropdownClick(e, item._id)}
@@ -199,78 +174,6 @@ export default function NewsletterListing() {
           </tbody>
         </table>
       </div>
-
-      {/* Pagination */}
-      <div className="flex justify-between items-center mt-4 flex-col md:flex-row gap-2 md:gap-0">
-        <p className="text-gray-600 text-sm">
-          Showing {currentData.length ? indexOfFirst + 1 : 0} to {indexOfFirst + currentData.length} of {data.length} entries
-        </p>
-
-        <div className="flex gap-2 flex-wrap">
-          <button
-            onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-            disabled={currentPage === 1}
-            className="px-3 py-1 rounded-lg disabled:opacity-50 bg-gradient-to-r from-[#043f79] to-[#0a68c1] text-white hover:opacity-90 transition"
-          >
-            Previous
-          </button>
-
-          {Array.from({ length: totalPages }, (_, i) => (
-            <button
-              key={i + 1}
-              onClick={() => setCurrentPage(i + 1)}
-              className={`px-3 py-1 rounded-lg border transition ${
-                currentPage === i + 1
-                  ? "bg-gradient-to-r from-[#043f79] to-[#0a68c1] text-white border-transparent"
-                  : "border-gray-300 hover:bg-gradient-to-r hover:from-[#043f79] hover:to-[#0a68c1] hover:text-white"
-              }`}
-            >
-              {i + 1}
-            </button>
-          ))}
-
-          <button
-            onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-            disabled={currentPage === totalPages || totalPages === 0}
-            className="px-3 py-1 rounded-lg disabled:opacity-50 bg-gradient-to-r from-[#043f79] to-[#0a68c1] text-white hover:opacity-90 transition"
-          >
-            Next
-          </button>
-        </div>
-      </div>
-
-      {/* Delete Modal */}
-      {deleteModalId && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50" onClick={() => setDeleteModalId(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-96 p-6 scale-95 animate-scaleIn" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold mb-4">Are you sure you want to delete this newsletter?</h3>
-            <div className="flex justify-end gap-4">
-              <button
-                onClick={() => setDeleteModalId(null)}
-                className="px-4 py-2 rounded-lg bg-gray-300 hover:bg-gray-400 transition"
-              >
-                No
-              </button>
-              <button
-                onClick={handleDelete}
-                className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition"
-              >
-                Yes
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <style>{`
-        @keyframes scaleIn {
-          0% { transform: scale(0.95); opacity: 0; }
-          100% { transform: scale(1); opacity: 1; }
-        }
-        .animate-scaleIn {
-          animation: scaleIn 0.2s ease-out forwards;
-        }
-      `}</style>
     </div>
   );
 }

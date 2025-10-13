@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:5000/api/auth"; // replace with your backend URL
+const API_URL = "http://localhost:5000/api/auth"; 
 
 export const login = async (credentials: { email: string; password: string }) => {
   return axios.post(`${API_URL}/login`, credentials, { withCredentials: true });
@@ -11,7 +11,7 @@ export const signup = async (userData: {
   lname: string;
   email: string;
   password: string;
-  termsAccepted: boolean; // add this
+  termsAccepted: boolean; 
 }) => {
   if (!userData.termsAccepted) {
     throw new Error("You must accept the terms and conditions");
@@ -21,9 +21,9 @@ export const signup = async (userData: {
 
 export const logout = async (navigate: any) => {
   try {
-    await axios.post("/api/auth/logout", {}, { withCredentials: true }); // call backend
-    localStorage.removeItem("user"); // clear frontend state if any
-    navigate("/signin"); // redirect to login
+    await axios.post("/api/auth/logout", {}, { withCredentials: true }); 
+    localStorage.removeItem("user"); 
+    navigate("/signin"); 
   } catch (err) {
     console.error("Logout failed:", err);
   }

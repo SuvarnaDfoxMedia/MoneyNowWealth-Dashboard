@@ -19,9 +19,9 @@ export default function ChangePasswordForm() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const backendUrl = "http://localhost:5000"; // Adjust if needed
+  const backendUrl = "http://localhost:5000"; 
 
-  // Password strength checker 
+  
   const getPasswordStrength = (password: string) => {
     if (password.length === 0) return "";
     if (password.length < 6) return "Weak" ;
@@ -34,7 +34,7 @@ export default function ChangePasswordForm() {
 
   const passwordStrength = getPasswordStrength(newPassword);
 
-  // Color based on strength
+  
   const passwordStrengthColor = () => {
     switch (passwordStrength) {
       case "Strong":
@@ -69,7 +69,7 @@ export default function ChangePasswordForm() {
 
     setErrors(newErrors);
 
-    // Show toast errors for all errors found
+    
     Object.values(newErrors).forEach((msg) => {
       if (msg) toast.error(msg);
     });
@@ -81,7 +81,7 @@ export default function ChangePasswordForm() {
     e.preventDefault();
 
     setTouched(true);
-    setErrors({}); // clear old errors
+    setErrors({}); 
 
     if (!validateFields()) {
       return;
@@ -101,7 +101,7 @@ export default function ChangePasswordForm() {
       setNewPassword("");
       setConfirmPassword("");
       setTouched(false);
-      navigate(-1); // go back after success
+      navigate(-1); 
     } catch (err: any) {
       const backendMsg = err.response?.data?.message || "Something went wrong";
 
@@ -125,7 +125,7 @@ export default function ChangePasswordForm() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen pt-20 pb-20 space-y-8">
-      {/* Back link */}
+      
       <div className="w-full max-w-md">
         <Link
           to="/"
@@ -136,7 +136,7 @@ export default function ChangePasswordForm() {
         </Link>
       </div>
 
-      {/* Change password form */}
+    
       <div className="w-full max-w-md">
         <div className="flex flex-col justify-center w-full mx-auto">
           <div className="mb-5 sm:mb-8">
@@ -150,7 +150,7 @@ export default function ChangePasswordForm() {
 
           <form onSubmit={handleSubmit} noValidate>
             <div className="space-y-6">
-              {/* Old Password */}
+              
               <div>
                 <Label>
                   Old Password <span className="text-error-500">*</span>
@@ -213,7 +213,7 @@ export default function ChangePasswordForm() {
                     )}
                   </span>
                 </div>
-                {/* Password strength message */}
+              
                 {newPassword && !errors.newPassword && (
                   <p className={`mt-1 text-sm font-semibold ${passwordStrengthColor()}`}>
                     Password Strength: {passwordStrength}
@@ -258,7 +258,7 @@ export default function ChangePasswordForm() {
                 )}
               </div>
 
-              {/* Submit Button */}
+      
               <div>
                 <Button className="w-full" size="sm" type="submit" disabled={loading}>
                   {loading ? "Changing..." : "Change Password"}

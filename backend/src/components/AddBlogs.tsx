@@ -6,6 +6,28 @@ import "react-datepicker/dist/react-datepicker.css";
 import toast from "react-hot-toast";
 import { FiSave, FiRefreshCw, FiArrowLeft } from "react-icons/fi";
 
+interface Category {
+  _id: string;
+  name: string;
+}
+
+interface BlogFormData {
+  title: string;
+  slug: string;
+  image: File | null;
+  existingImage: string;
+  titleTag: string;
+  altTag: string;
+  seoTitle: string;
+  metaDescription: string;
+  keywords: string;
+  pageSchema: string;
+  ogTag: string;
+  forHome: boolean;
+  date: Date;
+  categoryId: string;
+}
+
 export default function AddBlog() {
   const { id, role } = useParams<{ id?: string; role: string }>();
   const navigate = useNavigate();
@@ -14,10 +36,10 @@ export default function AddBlog() {
   const API_BASE = "http://localhost:5000/api";
   const BACKEND_URL = "http://localhost:5000";
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<BlogFormData>({
     title: "",
     slug: "",
-    image: null as File | null,
+    image: null,
     existingImage: "",
     titleTag: "",
     altTag: "",
@@ -28,11 +50,13 @@ export default function AddBlog() {
     ogTag: "",
     forHome: false,
     date: new Date(),
+    categoryId: "",
   });
 
   const [description, setDescription] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [errors, setErrors] = useState({
+  const [errors, setErrors] = useState<any>({
+    category: "",
     title: "",
     slug: "",
     image: "",
@@ -40,14 +64,35 @@ export default function AddBlog() {
     date: "",
   });
 
-  // Fetch blog if editing
-  useEffect(() => {
-    if (!id) return;
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isCategoriesLoaded, setIsCategoriesLoaded] = useState(false);
+  const [isBlogLoaded, setIsBlogLoaded] = useState(false);
 
+  // Fetch categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/categories`, { credentials: "include" });
+        const data = await res.json();
+        setCategories(data.categories || []);
+        setIsCategoriesLoaded(true);
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to fetch categories");
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  // Fetch blog data if editing
+  useEffect(() => {
+    if (!id) {
+      setIsBlogLoaded(true);
+      return;
+    }
     const fetchBlog = async () => {
       try {
         const res = await fetch(`${API_BASE}/blog/${id}`, { credentials: "include" });
-        if (!res.ok) throw new Error("Failed to fetch blog");
         const data = await res.json();
         const blog = data.blog;
 
@@ -65,32 +110,29 @@ export default function AddBlog() {
           ogTag: blog.og_tags || "",
           forHome: blog.for_home === "Yes",
           date: blog.publish_date ? new Date(blog.publish_date) : new Date(),
+          categoryId: blog.categoryId || "",
         });
 
         setDescription(blog.description || "");
         if (blog.image) setImagePreview(`${BACKEND_URL}/uploads/blog/${blog.image}`);
+        setIsBlogLoaded(true);
       } catch (err) {
         console.error(err);
         toast.error("Failed to fetch blog data");
       }
     };
-
     fetchBlog();
   }, [id]);
 
-  // Auto-generate slug
+  // Handle title change and auto-slug
   const handleTitleChange = (title: string) => {
-    const slug = title
-      .toLowerCase()
-      .trim()
-      .replace(/\s+/g, "-")
-      .replace(/[^a-z0-9\-]/g, "");
+    const slug = title.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9\-]/g, "");
     setFormData((prev) => ({ ...prev, title, slug }));
-    setErrors((prev) => ({ ...prev, title: "", slug: "" }));
+    setErrors((prev: any) => ({ ...prev, title: "", slug: "" }));
   };
 
-  // Input / Checkbox / File handler
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  // Input / file / checkbox handler
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type, checked, files } = event.target as HTMLInputElement;
 
     if (type === "file" && files && files[0]) {
@@ -99,11 +141,11 @@ export default function AddBlog() {
       imgObj.src = URL.createObjectURL(img);
       imgObj.onload = () => {
         if (imgObj.width !== 1140 || imgObj.height !== 590) {
-          setErrors((prev) => ({ ...prev, image: "Image must be 1140x590 pixels" }));
+          setErrors((prev: any) => ({ ...prev, image: "Image must be 1140x590 pixels" }));
           setFormData((prev) => ({ ...prev, image: null }));
           setImagePreview(formData.existingImage ? `${BACKEND_URL}/uploads/blog/${formData.existingImage}` : null);
         } else {
-          setErrors((prev) => ({ ...prev, image: "" }));
+          setErrors((prev: any) => ({ ...prev, image: "" }));
           setFormData((prev) => ({ ...prev, image: img, existingImage: "" }));
           setImagePreview(URL.createObjectURL(img));
         }
@@ -112,29 +154,29 @@ export default function AddBlog() {
       setFormData((prev) => ({ ...prev, [name]: checked }));
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
-      if (name in errors) setErrors((prev) => ({ ...prev, [name]: "" }));
+      setErrors((prev: any) => ({ ...prev, [name]: "" }));
     }
   };
 
   const handleDateChange = (date: Date | null) => {
     setFormData((prev) => ({ ...prev, date: date || new Date() }));
-    setErrors((prev) => ({ ...prev, date: !date ? "Publish Date is required" : "" }));
+    setErrors((prev: any) => ({ ...prev, date: !date ? "Publish Date is required" : "" }));
   };
 
-  // Validate
+  // Validate fields
   const validate = () => {
     const newErrors: any = {};
+    if (!formData.categoryId) newErrors.category = "Category is required";
     if (!formData.title.trim()) newErrors.title = "Title is required";
     if (!formData.slug.trim()) newErrors.slug = "Slug is required";
     if (!description.trim() || description === "<p><br></p>") newErrors.description = "Description is required";
     if (!formData.date) newErrors.date = "Publish Date is required";
     if (!formData.image && !id && !formData.existingImage) newErrors.image = "Image is required";
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Handle submit
+  // Submit
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!validate()) return;
@@ -153,11 +195,12 @@ export default function AddBlog() {
       payload.append("og_tags", formData.ogTag);
       payload.append("for_home", formData.forHome ? "Yes" : "No");
       payload.append("date", formData.date.toISOString());
+      payload.append("categoryId", formData.categoryId);
       if (formData.image) payload.append("image", formData.image);
 
       const url = id
-        ? `${API_BASE}/${role}/blog/${id}` // edit
-        : `${API_BASE}/${role}/blog/create`; // create
+        ? `${API_BASE}/${role}/blog/${id}`
+        : `${API_BASE}/${role}/blog/create`;
       const method = id ? "PUT" : "POST";
 
       const res = await fetch(url, { method, body: payload, credentials: "include" });
@@ -167,16 +210,9 @@ export default function AddBlog() {
         toast.success(id ? "Blog updated successfully!" : "Blog added successfully!");
         navigate(`/${role}/blogs`);
       } else {
-        const errMsg = data.message || "";
-        if (data.code === 11000 || errMsg.includes("duplicate key")) {
-          setErrors((prev) => ({ ...prev, title: `Title "${formData.title}" already exists.` }));
-        } else if (data.errors) {
-          setErrors((prev) => ({ ...prev, ...data.errors }));
-        } else {
-          toast.error(errMsg || "Failed to submit blog");
-        }
+        toast.error(data.message || "Failed to submit blog");
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
       toast.error("Something went wrong!");
     }
@@ -199,14 +235,31 @@ export default function AddBlog() {
       </div>
 
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow space-y-4">
-        {/* Title */}
+        {/* Category */}
+        <div>
+          <label className="block font-medium mb-1">Category</label>
+          <select
+            name="categoryId"
+            value={formData.categoryId}
+            onChange={handleChange}
+            className={`w-full p-2 border rounded border-gray-300 ${errors.category ? "border-red-500" : ""}`}
+          >
+            <option value="">-- Select Category --</option>
+            {categories.map((cat) => (
+              <option key={cat._id} value={cat._id}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
+          {errors.category && <p className="text-red-600 text-sm mt-1">{errors.category}</p>}
+        </div>
+
+        {/* Title & Slug */}
         <div>
           <label className="block font-medium mb-1">Title</label>
           <input type="text" name="title" value={formData.title} onChange={(e) => handleTitleChange(e.target.value)} className={inputClass("title")} />
           {errors.title && <p className="text-red-600 text-sm mt-1">{errors.title}</p>}
         </div>
-
-        {/* Slug */}
         <div>
           <label className="block font-medium mb-1">Slug</label>
           <input type="text" name="slug" value={formData.slug} onChange={handleChange} className={inputClass("slug")} />
@@ -230,7 +283,7 @@ export default function AddBlog() {
             config={{ readonly: false, height: 300, toolbarSticky: true, placeholder: "Type here..." }}
             onBlur={(newContent) => {
               setDescription(newContent);
-              if (newContent.trim() && newContent !== "<p><br></p>") setErrors((prev) => ({ ...prev, description: "" }));
+              if (newContent.trim() && newContent !== "<p><br></p>") setErrors((prev: any) => ({ ...prev, description: "" }));
             }}
           />
           {errors.description && <p className="text-red-600 text-sm mt-1">{errors.description}</p>}
@@ -248,7 +301,7 @@ export default function AddBlog() {
           {errors.date && <p className="text-red-600 text-sm mt-1">{errors.date}</p>}
         </div>
 
-        {/* SEO & Optional Fields */}
+        {/* SEO Fields */}
         {["titleTag", "altTag", "seoTitle", "metaDescription", "keywords", "pageSchema", "ogTag"].map((field) => (
           <div key={field}>
             <label className="block font-medium mb-1">{field.replace(/([A-Z])/g, " $1")}</label>
@@ -274,11 +327,11 @@ export default function AddBlog() {
           <button
             type="button"
             onClick={() => {
-              setFormData((prev) => ({
+              setFormData({
                 title: "",
                 slug: "",
                 image: null,
-                existingImage: id ? prev.existingImage : "",
+                existingImage: id ? formData.existingImage : "",
                 titleTag: "",
                 altTag: "",
                 seoTitle: "",
@@ -288,10 +341,11 @@ export default function AddBlog() {
                 ogTag: "",
                 forHome: false,
                 date: new Date(),
-              }));
+                categoryId: "",
+              });
               setDescription("");
               setImagePreview(id && formData.existingImage ? `${BACKEND_URL}/uploads/blog/${formData.existingImage}` : null);
-              setErrors({ title: "", slug: "", image: "", description: "", date: "" });
+              setErrors({ category: "", title: "", slug: "", image: "", description: "", date: "" });
             }}
             className="px-6 py-2 rounded-lg bg-gradient-to-r from-[#043f79] to-[#0a68c1] text-white flex items-center gap-2 hover:opacity-90 transition transform hover:scale-105"
           >

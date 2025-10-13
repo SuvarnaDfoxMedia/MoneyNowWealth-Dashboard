@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import { FiSave, FiRefreshCw, FiArrowLeft } from "react-icons/fi";
 
 export default function AddContactEnquiry() {
+  const { role } = useParams(); // ✅ useParams instead of localStorage
   const navigate = useNavigate();
   const API_BASE = "http://localhost:5000/api";
 
@@ -15,14 +16,12 @@ export default function AddContactEnquiry() {
     message: "",
   });
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
+  const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const { fullName, email, subject, message } = formData;
@@ -36,15 +35,18 @@ export default function AddContactEnquiry() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
+        credentials: "include", // ✅ matches AddBlog
       });
 
+      const data = await res.json();
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
         toast.error(data.message || "Failed to submit enquiry");
         return;
       }
 
-      toast.success("Your enquiry has been submitted successfully!");
+      toast.success("Contact enquiry submitted successfully!");
+
+      // Reset
       setFormData({
         fullName: "",
         email: "",
@@ -53,29 +55,27 @@ export default function AddContactEnquiry() {
         message: "",
       });
 
-      // Redirect to listing page
-      navigate("/contactenquiry");
+      // ✅ Immediate navigation (not delayed)
+      navigate(`/${role || "admin"}/contactenquiry`);
     } catch (err) {
-      console.error(err);
+      console.error("Error:", err);
       toast.error("Something went wrong!");
     }
   };
 
   return (
     <main className="w-full px-4 py-6">
-      {/* Header */}
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Contact Us</h2>
+        <h2 className="text-2xl font-bold">Add Contact Enquiry</h2>
         <button
           type="button"
-          onClick={() => navigate("/contactenquiry")} // Back to listing
+          onClick={() => navigate(`/${role || "admin"}/contactenquiry`)}
           className="px-4 py-2 rounded-lg bg-gradient-to-r from-[#043f79] to-[#0a68c1] text-white flex items-center gap-2 hover:opacity-90 transition transform hover:scale-105"
         >
           <FiArrowLeft /> Back
         </button>
       </div>
 
-      {/* Form */}
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow space-y-4">
         <div>
           <label className="block font-medium mb-1">Full Name *</label>
@@ -86,6 +86,7 @@ export default function AddContactEnquiry() {
             onChange={handleChange}
             placeholder="Enter your full name"
             className="w-full border p-2 rounded"
+            required
           />
         </div>
 
@@ -98,6 +99,7 @@ export default function AddContactEnquiry() {
             onChange={handleChange}
             placeholder="Enter your email"
             className="w-full border p-2 rounded"
+            required
           />
         </div>
 
@@ -120,6 +122,7 @@ export default function AddContactEnquiry() {
             value={formData.subject}
             onChange={handleChange}
             className="w-full border p-2 rounded"
+            required
           >
             <option value="Support">Support</option>
             <option value="Partner Inquiry">Partner Inquiry</option>
@@ -136,6 +139,7 @@ export default function AddContactEnquiry() {
             onChange={handleChange}
             placeholder="Write your message here"
             className="w-full border p-2 rounded h-32 resize-none"
+            required
           />
         </div>
 

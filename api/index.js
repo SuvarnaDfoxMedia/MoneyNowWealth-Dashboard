@@ -12,6 +12,7 @@ import { protect } from "./middleware/authMiddleware.js";
 import { authorizeRoles } from "./middleware/authMiddleware.js";
 import profileRoutes from "./routes/profileRoutes.js";
 import contactRoutes from "./routes/contactRoutes.js";
+import blogCategoryRoutes from "./routes/blogCategoryRoutes.js";
 import path from "path";
 import { fileURLToPath } from 'url';
 
@@ -46,6 +47,7 @@ app.use("/api/test", testRoutes);
 app.use("/api", newsletterRoutes);
 app.use("/api", blogRoutes);
 app.use("/api", contactRoutes);
+app.use("/api", blogCategoryRoutes);
 
 //  Protected routes for role-based access
 // app.get("/api/profile", protect, (req, res) => {

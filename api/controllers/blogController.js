@@ -13,6 +13,7 @@ export const saveBlog = async (req, res) => {
     if (!data.slug || data.slug.trim() === "") errors.slug = "Slug is required";
     if (!data.description || data.description.trim() === "") errors.description = "Description is required";
     if (!data.date || data.date.trim() === "") errors.date = "Publish Date is required";
+    if (!data.categoryId || data.categoryId.trim() === "") errors.categoryId = "Category is required"; // new
     if (!req.file && !id) errors.image = "Image is required"; // only required on create
 
     // Duplicate name check
@@ -47,6 +48,7 @@ export const saveBlog = async (req, res) => {
         publish_date: data.date,
         image: req.file?.filename || "",
         user_id: req.user?.id,
+        categoryId: data.categoryId, // <-- save category
       });
     } else {
       // Update existing blog
@@ -65,18 +67,20 @@ export const saveBlog = async (req, res) => {
       blog.og_tags = data.og_tags || "";
       blog.for_home = data.for_home || "No";
       blog.publish_date = data.date;
+      blog.categoryId = data.categoryId; // <-- update category
 
       if (req.file) blog.image = req.file.filename; // optional on update
     }
 
     await blog.save();
+    // Populate category before sending response
+    await blog.populate("categoryId", "name");
     res.json({ success: true, blog });
   } catch (err) {
     // Handle Mongo duplicate key error (fallback)
     if (err.code === 11000 && err.keyPattern?.name) {
       return res.status(400).json({ success: false, errors: { name: "Blog title already exists" } });
     }
-
     res.status(500).json({ success: false, message: err.message });
   }
 };
@@ -85,7 +89,7 @@ export const saveBlog = async (req, res) => {
 export const getBlogById = async (req, res) => {
   try {
     const { id } = req.params;
-    const blog = await Blog.findById(id);
+    const blog = await Blog.findById(id).populate("categoryId", "name");
     if (!blog) return res.status(404).json({ success: false, message: "Blog not found" });
     res.json({ success: true, blog });
   } catch (err) {
@@ -105,7 +109,9 @@ export const searchBlogs = async (req, res) => {
           ],
         }
       : { is_active: { $ne: 2 } };
-    const blogs = await Blog.find(condition).sort({ _id: -1 });
+    const blogs = await Blog.find(condition)
+      .sort({ _id: -1 })
+      .populate("categoryId", "name"); // populate category
     res.json(blogs);
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -117,7 +123,7 @@ export const changeStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-    const blog = await Blog.findByIdAndUpdate(id, { is_active: status }, { new: true });
+    const blog = await Blog.findByIdAndUpdate(id, { is_active: status }, { new: true }).populate("categoryId", "name");
     res.json({ success: true, blog });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -128,7 +134,7 @@ export const changeStatus = async (req, res) => {
 export const deleteBlog = async (req, res) => {
   try {
     const { id } = req.params;
-    const blog = await Blog.findByIdAndUpdate(id, { is_active: 2 }, { new: true });
+    const blog = await Blog.findByIdAndUpdate(id, { is_active: 2 }, { new: true }).populate("categoryId", "name");
     res.json({ success: true, blog });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

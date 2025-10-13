@@ -27,53 +27,77 @@ const AppSidebar: React.FC = () => {
   const { user } = useAuth();
   const role = user?.role || "";
 
+  
+
   const allNavItems: NavItem[] = [
+  {
+    icon: <GridIcon />,
+    name: "Dashboard",
+    path: `/${role}/dashboard`,
+    roles: ["admin", "editor", "user"],
+  },
+  {
+  icon: <ListIcon />,
+  name: "Blog Categories",
+  path: `/${role}/blogcategories`,
+  roles: ["admin", "editor"], 
+},
+
+  {
+    icon: <ListIcon />,
+    name: "Blog",
+    path: `/${role}/blogs`,
+    roles: ["admin", "editor"],
+  },
     {
-      icon: <GridIcon />,
-      name: "Dashboard",
-      path: `/${role}/dashboard`,
-      roles: ["admin", "editor", "user"],
-    },
-    {
-      icon: <ListIcon />,
-      name: "Blog",
-      path: `/${role}/blogs`,
-      roles: ["admin", "editor"],
-    },
-    {
-      icon: <UserCircleIcon />,
-      name: "Profile",
-      path: `/${role}/profile`, // role-based path
-      roles: ["admin", "editor", "user"],
-    },
-    {
-      icon: <LockIcon />,
-      name: "Change Password",
-      path: `/${role}/change-password`, // role-based path
-      roles: ["admin", "editor", "user"],
-    },
-    {
-      name: "Forms",
-      icon: <ListIcon />,
-      roles: ["admin"],
-      subItems: [{ name: "Form Elements", path: "/form-elements", roles: ["admin"] }],
-    },
-    {
-      name: "Tables",
-      icon: <TableIcon />,
-      roles: ["admin"],
-      subItems: [{ name: "Basic Tables", path: "/basic-tables", roles: ["admin"] }],
-    },
-    {
-      name: "Pages",
-      icon: <PageIcon />,
-      roles: ["admin"],
-      subItems: [
-        { name: "Blank Page", path: "/blank", roles: ["admin"] },
-        { name: "404 Error", path: "/error-404", roles: ["admin"] },
-      ],
-    },
-  ];
+    name: "Newsletter",
+    icon: <ListIcon />, 
+    path: `/${role}/newsletter`,
+    roles: ["admin"],
+  },  
+  {
+    name: "Contact Enquiry",
+    icon: <ListIcon />, 
+    path: `/${role}/contactenquiry`,
+    roles: ["admin"],
+  },
+  {
+    icon: <UserCircleIcon />,
+    name: "Profile",
+    path: `/${role}/profile`,
+    roles: ["admin", "editor", "user"],
+  },
+  {
+    icon: <LockIcon />,
+    name: "Change Password",
+    path: `/${role}/change-password`,
+    roles: ["admin", "editor", "user"],
+  },
+  {
+    name: "Forms",
+    icon: <ListIcon />,
+    roles: ["admin"],
+    subItems: [{ name: "Form Elements", path: "/form-elements", roles: ["admin"] }],
+  },
+  {
+    name: "Tables",
+    icon: <TableIcon />,
+    roles: ["admin"],
+    subItems: [{ name: "Basic Tables", path: "/basic-tables", roles: ["admin"] }],
+  },
+  {
+    name: "Pages",
+    icon: <PageIcon />,
+    roles: ["admin"],
+    subItems: [
+      { name: "Blank Page", path: "/blank", roles: ["admin"] },
+      { name: "404 Error", path: "/error-404", roles: ["admin"] },
+    ],
+  },
+
+
+];
+
 
   const navItems: NavItem[] = allNavItems
     .filter((item) => !item.roles || item.roles.includes(role))

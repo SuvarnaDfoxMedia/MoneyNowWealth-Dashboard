@@ -40,6 +40,9 @@ import BarChart from "./pages/Charts/BarChart";
 
 import NotFound from "./pages/OtherPage/NotFound";
 import UserProfiles from "./pages/UserProfiles";
+import PreviewBlog from "./components/PreviewBlog";
+import BlogCategoryListing from "./components/tables/BasicTables/BlogCategoryListing";
+import AddBlogCategory from "./components/AddBlogCategory";
 
 export default function App() {
   return (
@@ -87,10 +90,16 @@ function AppRoutes() {
   {/* Admin & Editor Routes */}
   <Route element={<PrivateRoute roles={["admin", "editor"]}><AppLayout /></PrivateRoute>}>
     <Route path="/:role/dashboard" element={<Home />} />
+    <Route path="/:role/blogcategories" element={<BlogCategoryListing/>} />
+    <Route path="/:role/blogcategories/create" element={<AddBlogCategory/>} />
+    <Route path="/:role/blogcategories/edit/:id" element={<AddBlogCategory />} />
+
+
     <Route path="/:role/blogs" element={<BlogList />} />
     <Route path="/:role/blogs/create" element={<AddBlogs />} />
     <Route path="/:role/blog/edit/:id" element={<AddBlogs />} />
-   <Route path="/:role/profile" element={<UserProfiles />} />  
+    <Route path="/:role/blogs/preview/:id" element={<PreviewBlog />} />
+    <Route path="/:role/profile" element={<UserProfiles />} />  
     <Route path="/:role/change-password" element={<ChangePasswordForm />} />
 
     {/* Admin-only routes */}
@@ -99,6 +108,8 @@ function AppRoutes() {
         <Route path="/:role/newsletter" element={<NewsletterLisging />} />
         <Route path="/:role/addnewsletter" element={<AddNewsletter />} />
         <Route path="/:role/contactenquiry" element={<ContactEnquiryListing />} />
+        <Route path="/:role/addcontactenquiry" element={<AddContactEnquiry/>} />
+
         <Route path="/form-elements" element={<FormElements />} />
         <Route path="/basic-tables" element={<BasicTables />} />
         <Route path="/blank" element={<Blank />} />

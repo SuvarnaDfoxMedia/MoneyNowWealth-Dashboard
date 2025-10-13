@@ -133,7 +133,7 @@ export default function ContactEnquiryListing() {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Header with Add Button */}
+      
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-3xl font-bold text-gray-800">Contact Enquiries</h2>
         <button
@@ -186,7 +186,7 @@ export default function ContactEnquiryListing() {
                   <td className="px-6 py-4 text-gray-600">{item.mobile || "-"}</td>
                   <td className="px-6 py-4 text-gray-600">{item.subject}</td>
                   <td className="px-6 py-4 text-gray-600">{item.message}</td>
-                  <td className="px-6 py-4">{new Date(item.createdAt).toLocaleDateString()}</td>
+                  <td className="px-6 py-4">{new Date(item.createdAt).toLocaleString()}</td>
                   <td className="px-6 py-4 text-center relative">
                     <button
                       onClick={(e) => handleDropdownClick(e, item._id)}

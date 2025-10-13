@@ -1,27 +1,28 @@
-import { useState } from "react";
+import { useState, ChangeEvent, FormEvent, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "../../icons";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Button from "../ui/button/Button";
 import { useAuth } from "../../context/AuthContext";
-import toast from "react-hot-toast";
-import axios from "axios";
+
+interface Errors {
+  email?: string;
+  password?: string;
+}
 
 export default function SignInForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [errors, setErrors] = useState<Errors>({});
+  const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
-  const { setAuth } = useAuth(); // use AuthContext
+  const { login, user } = useAuth();
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
-
-  const validateFields = () => {
-    const newErrors: { email?: string; password?: string } = {};
-
+  const validateFields = (): boolean => {
+    const newErrors: Errors = {};
     if (!email.trim()) newErrors.email = "Email is required.";
     else if (!/^\S+@\S+\.\S+$/.test(email)) newErrors.email = "Please enter a valid email address.";
 
@@ -32,46 +33,29 @@ export default function SignInForm() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErrors({});
-
     if (!validateFields()) return;
 
+    setLoading(true);
     try {
-      const res = await axios.post(
-        `${backendUrl}/api/auth/login`,
-        { email, password },
-        { withCredentials: true }
-      );
-
-      const loggedInUser = res.data.user;
-      const token = res.data.token;
-
-      // Set user & token in AuthContext
-      setAuth(token, loggedInUser);
-
-      toast.success("Login successful!");
-
-      // Navigate based on role
-      const role = loggedInUser.role?.toLowerCase();
-      if (role === "admin" || role === "editor") {
-        navigate(`/${role}/dashboard`, { replace: true });
-      } else {
-        navigate("/userdashboard", { replace: true });
-      }
+      await login(email, password);
+      // Redirect handled in useEffect
     } catch (err: any) {
-      const backendMsg = err.response?.data?.message || "Login failed";
-      if (backendMsg.toLowerCase().includes("password") || backendMsg.toLowerCase().includes("credential")) {
-        setErrors({ password: "Invalid email or password" });
-      } else if (backendMsg.toLowerCase().includes("user not found")) {
-        setErrors({ email: "No account found with this email" });
-        toast.error("User not found. Please sign up first.");
-      } else {
-        toast.error(backendMsg);
-      }
+      setErrors({ password: err.message });
+    } finally {
+      setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (user) {
+      const role = user.role?.toLowerCase();
+      if (role === "admin" || role === "editor") navigate(`/${role}/dashboard`, { replace: true });
+      else navigate("/userdashboard", { replace: true });
+    }
+  }, [user, navigate]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen pt-20 pb-20 space-y-8">
@@ -98,49 +82,51 @@ export default function SignInForm() {
 
           <form onSubmit={handleLogin} noValidate>
             <div className="space-y-6">
+              {/* Email */}
               <div>
-                <Label>
-                  Email <span className="text-error-500">*</span>
-                </Label>
+                <Label>Email <span className="text-error-500">*</span></Label>
                 <Input
                   placeholder="info@gmail.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
                   type="text"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (errors.email) setErrors({ ...errors, email: undefined });
+                  }}
                   className={errors.email ? "border-red-500 ring-1 ring-red-500" : ""}
+                  disabled={loading}
                 />
                 {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
               </div>
 
+              {/* Password */}
               <div>
-                <Label>
-                  Password <span className="text-error-500">*</span>
-                </Label>
+                <Label>Password <span className="text-error-500">*</span></Label>
                 <div className="relative">
                   <Input
                     placeholder="Enter your password"
                     type={showPassword ? "text" : "password"}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (errors.password) setErrors({ ...errors, password: undefined });
+                    }}
                     className={errors.password ? "border-red-500 ring-1 ring-red-500" : ""}
+                    disabled={loading}
                   />
                   <span
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2"
                   >
-                    {showPassword ? (
-                      <EyeIcon className="fill-gray-500 dark:fill-gray-400 size-5" />
-                    ) : (
-                      <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400 size-5" />
-                    )}
+                    {showPassword ? <EyeIcon className="fill-gray-500 dark:fill-gray-400 size-5" /> : <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400 size-5" />}
                   </span>
                 </div>
                 {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
               </div>
 
               <div>
-                <Button className="w-full" size="sm" type="submit">
-                  Sign in
+                <Button className="w-full" size="sm" type="submit" disabled={loading}>
+                  {loading ? "Signing in..." : "Sign in"}
                 </Button>
               </div>
             </div>
@@ -153,7 +139,6 @@ export default function SignInForm() {
                 Sign Up
               </Link>
             </p>
-
             <Link to="/forgot-password" className="text-brand-500 hover:text-brand-600 dark:text-brand-400">
               Forgot password?
             </Link>
