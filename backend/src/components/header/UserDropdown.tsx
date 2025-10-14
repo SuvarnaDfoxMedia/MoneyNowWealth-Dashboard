@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { useNavigate } from "react-router";
+import axios from "axios";
 import { toast } from "react-hot-toast";
 import { useAuth } from "../../context/AuthContext"; // <-- use this
 
@@ -40,7 +41,7 @@ export default function UserDropdown() {
 
   const profileImage = user?.profileImage
     ? `${backendUrl}${user.profileImage}?v=${imageVersion}`
-    : "/images/user/owner.png";
+    : "/images/user/owner.jpg";
 
   const role = user?.role || "user";
 
