@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
 import axios from "axios";
 
 interface User {
@@ -29,20 +29,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
+  // Prevent multiple refreshUser calls
+  const refreshCalled = useRef(false);
+  
   const clearAuth = () => {
     setUser(null);
     localStorage.removeItem("user");
   };
 
+
   const refreshUser = async () => {
-    try {
-      const res = await axios.get(`${backendUrl}/api/profile`, { withCredentials: true });
-      setUser(res.data);
-      localStorage.setItem("user", JSON.stringify(res.data));
-    } catch (err) {
-      clearAuth();
-    }
-  };
+  if (refreshCalled.current) return; // Already called, skip
+  refreshCalled.current = true;
+
+  try {
+    const res = await axios.get(`${backendUrl}/api/profile`, { withCredentials: true });
+    setUser(res.data);
+    localStorage.setItem("user", JSON.stringify(res.data));
+  } catch (err) {
+    clearAuth();
+  }
+};
 
   const login = async (email: string, password: string) => {
     try {
@@ -74,13 +81,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+
+  // Only call refreshUser once per mount/session
   useEffect(() => {
-    const init = async () => {
+  const init = async () => {
+    const cachedUser = localStorage.getItem("user");
+    if (cachedUser) {
       await refreshUser();
-      setLoading(false);
-    };
-    init();
-  }, []);
+    }
+    setLoading(false);
+  };
+  init();
+}, []);
 
   return (
     <AuthContext.Provider value={{ user, loading, login, logout, refreshUser }}>
