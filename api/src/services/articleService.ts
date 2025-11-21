@@ -1,0 +1,143 @@
+import Article, { type IArticle } from "../models/articleModel.ts";
+
+export const getArticles = async (query: any) => {
+  const {
+    status,
+    topic_id,
+    includeInactive,
+    search,
+    page,
+    limit,
+    sortField,
+    sortOrder,
+  } = query || {};
+
+  const pageNum = parseInt(page as string) || 1;
+  const perPage = parseInt(limit as string) || 10;
+  const skip = (pageNum - 1) * perPage;
+
+  const filter: Record<string, any> = { is_deleted: false };
+
+  // Exclude archived by default
+  filter.status = { $ne: "archived" };
+  if (status) filter.status = status;
+  if (topic_id) filter.topic_id = topic_id;
+  if (includeInactive !== "true") filter.is_active = 1;
+
+  if (search) {
+    filter.$or = [
+      { title: { $regex: search, $options: "i" } },
+      { focus_keyword: { $regex: search, $options: "i" } },
+      { article_code: { $regex: search, $options: "i" } },
+    ];
+  }
+
+  const sortConfig: Record<string, 1 | -1> = {};
+  if (sortField) {
+    sortConfig[sortField] = sortOrder === "desc" ? -1 : 1;
+  } else {
+    sortConfig.created_at = -1;
+  }
+
+  const [articles, total] = await Promise.all([
+    Article.find(filter)
+      .populate("topic_id", "topic_code title")
+      .sort(sortConfig)
+      .skip(skip)
+      .limit(perPage)
+      .lean(),
+    Article.countDocuments(filter),
+  ]);
+
+  return {
+    articles,
+    total,
+    currentPage: pageNum,
+    totalPages: Math.ceil(total / perPage),
+  };
+};
+
+export const getArticleById = async (id: string) => {
+  return await Article.findById(id)
+    .populate("topic_id", "topic_code title")
+    .exec();
+};
+
+export const createArticle = async (data: Partial<IArticle>) => {
+  if (data.slug) {
+    const existingSlug = await Article.findOne({ slug: data.slug });
+    if (existingSlug) throw new Error("Slug already exists");
+  }
+
+  if (typeof data.hero_image !== "string") {
+    data.hero_image = "";
+  }
+
+  // Validate and default status
+  if (!["draft", "published", "archived"].includes(data.status || "")) {
+    data.status = "draft";
+  }
+
+  const lastArticle = await Article.findOne({}, { article_code: 1 })
+    .sort({ created_at: -1 })
+    .lean();
+
+  let nextCode = "ART0001";
+  if (lastArticle?.article_code) {
+    const lastNum = parseInt(lastArticle.article_code.replace("ART", ""), 10);
+    nextCode = "ART" + String(lastNum + 1).padStart(4, "0");
+  }
+
+  const preparedData: Partial<IArticle> = {
+    ...data,
+    article_code: nextCode,
+    sections: data.sections || [],
+    faqs: data.faqs || [],
+    tools: data.tools || [],
+    related_reads: data.related_reads || [],
+    is_active: 1,
+    is_deleted: false,
+  };
+
+  const article = new Article(preparedData);
+  await article.save();
+  return article;
+};
+
+export const updateArticle = async (id: string, data: Partial<IArticle>) => {
+  if (data.slug) {
+    const existingSlug = await Article.findOne({
+      slug: data.slug,
+      _id: { $ne: id },
+    });
+    if (existingSlug) throw new Error("Slug already exists");
+  }
+
+  if (typeof data.hero_image !== "string") {
+    delete data.hero_image;
+  }
+
+  // Validate and default status
+  if (!["draft", "published", "archived"].includes(data.status || "")) {
+    data.status = "draft";
+  }
+
+  return await Article.findByIdAndUpdate(id, data, { new: true });
+};
+
+export const toggleArticleStatus = async (id: string) => {
+  if (!id || id === "undefined") throw new Error("Invalid article ID");
+  const article = await Article.findById(id);
+  if (!article) throw new Error("Article not found");
+  article.is_active = article.is_active === 1 ? 0 : 1;
+  await article.save();
+  return article;
+};
+
+export const deleteArticle = async (id: string) => {
+  return await Article.findByIdAndUpdate(
+    id,
+    { is_deleted: true, is_active: 0, status: "archived" },
+    { new: true }
+  );
+};

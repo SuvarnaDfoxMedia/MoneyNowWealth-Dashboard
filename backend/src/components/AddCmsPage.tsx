@@ -1,0 +1,1033 @@
+// import React, { useState, useEffect, ChangeEvent } from "react";
+// import { useParams, useNavigate } from "react-router-dom";
+// import { FiSave, FiRefreshCw, FiArrowLeft, FiPlus, FiTrash2 } from "react-icons/fi";
+// import { toast } from "react-hot-toast";
+// import { useCommonCrud } from "../hooks/useCommonCrud";
+// import { RichTextField } from "./PagesComponent/RichTextField";
+
+// interface Section {
+//   title: string;
+//   content: string;
+//   images?: string[];
+//   videos?: string[];
+//   cta?: { text: string; url: string };
+// }
+
+// interface FAQ {
+//   question: string;
+//   answer: string;
+// }
+
+// interface CmsPageForm {
+//   title: string;
+//   slug: string;
+//   sections: Section[];
+//   faqs: FAQ[];
+//   status: "draft" | "published" | "archived";
+//   is_active?: number;
+//   page_code?: string;
+// }
+
+// const generateSlug = (text: string) =>
+//   text
+//     .toLowerCase()
+//     .trim()
+//     .replace(/[^a-z0-9\s-]/g, "")
+//     .replace(/\s+/g, "-")
+//     .replace(/-+/g, "-");
+
+// export default function AddCmsPage() {
+//   const { role, id } = useParams<{ role?: string; id?: string }>();
+//   const navigate = useNavigate();
+
+//   const { getOne, createRecord, updateRecord } = useCommonCrud({
+//     role: role || "admin",
+//     module: "cmspages",
+//   });
+
+//   const [values, setValues] = useState<CmsPageForm>({
+//     title: "",
+//     slug: "",
+//     sections: [],
+//     faqs: [],
+//     status: "draft",
+//     is_active: 1,
+//   });
+
+//   const [loading, setLoading] = useState(false);
+//   const [isSubmitting, setIsSubmitting] = useState(false);
+//   const [slugEdited, setSlugEdited] = useState(false);
+//   const [errors, setErrors] = useState<Record<string, string>>({});
+
+//   // Fetch CMS page for edit
+//   useEffect(() => {
+//     if (!id) return;
+
+//     const fetchPage = async () => {
+//       setLoading(true);
+//       try {
+//         const res = await getOne(id);
+//         const page = res?.data?.page || res?.page || res;
+
+//         if (!page) {
+//           toast.error("CMS page not found");
+//           navigate("/admin/cmspages");
+//           return;
+//         }
+
+//         setValues({
+//           title: page.title || "",
+//           slug: page.slug || "",
+//           sections: page.sections?.length ? page.sections : [],
+//           faqs: page.faqs?.length ? page.faqs : [],
+//           status: page.status || "draft",
+//           is_active: page.is_active ?? 1,
+//           page_code: page.page_code, // keep for update
+//         });
+//       } catch (err) {
+//         console.error("Error fetching CMS page:", err);
+//         toast.error("Failed to fetch page details");
+//         navigate("/admin/cmspages");
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
+
+//     fetchPage();
+//     // eslint-disable-next-line react-hooks/exhaustive-deps
+//   }, [id]);
+
+//   // Handle input changes and slug auto-generation
+//   const handleChange = (
+//     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+//   ) => {
+//     const { name, value } = e.target;
+//     setValues((prev) => {
+//       const updated = { ...prev, [name]: value };
+//       if (name === "title" && !slugEdited) updated.slug = generateSlug(value);
+//       if (name === "slug") setSlugEdited(true);
+//       return updated;
+//     });
+//     setErrors((prev) => ({ ...prev, [name]: "" }));
+//   };
+
+//   // Sections & FAQs handlers
+//   const addItem = (key: keyof CmsPageForm, item: any) =>
+//     setValues((prev) => ({ ...prev, [key]: [...(prev[key] as any[]), item] }));
+
+//   const removeItem = (key: keyof CmsPageForm, index: number) =>
+//     setValues((prev) => ({
+//       ...prev,
+//       [key]: (prev[key] as any[]).filter((_, i) => i !== index),
+//     }));
+
+//   const handleSectionChange = (index: number, field: keyof Section, value: string) =>
+//     setValues((prev) => {
+//       const updated = [...prev.sections];
+//       updated[index] = { ...updated[index], [field]: value };
+//       return { ...prev, sections: updated };
+//     });
+
+//   const handleFAQChange = (index: number, field: keyof FAQ, value: string) =>
+//     setValues((prev) => {
+//       const updated = [...prev.faqs];
+//       updated[index] = { ...updated[index], [field]: value };
+//       return { ...prev, faqs: updated };
+//     });
+
+//   // Reset form
+//   const resetForm = () => {
+//     setValues({
+//       title: "",
+//       slug: "",
+//       sections: [],
+//       faqs: [],
+//       status: "draft",
+//       is_active: 1,
+//     });
+//     setErrors({});
+//   };
+
+//   // Submit form
+//   const handleSubmit = async (e: React.FormEvent) => {
+//     e.preventDefault();
+
+//     const newErrors: Record<string, string> = {};
+//     if (!values.title.trim()) newErrors.title = "Title required";
+//     if (!values.slug.trim()) newErrors.slug = "Slug required";
+//     if (Object.keys(newErrors).length > 0) return setErrors(newErrors);
+
+//     try {
+//       setIsSubmitting(true);
+//       const payload: CmsPageForm = { ...values };
+//       if (!id) delete payload.page_code; // remove page_code on create
+
+//       if (id) {
+//         await updateRecord(id, payload);
+//         toast.success("CMS page updated successfully");
+//       } else {
+//         await createRecord(payload);
+//         toast.success("CMS page created successfully");
+//       }
+
+//       navigate("/admin/cmspages");
+//     } catch (error: any) {
+//       console.error("Submit error:", error);
+//       if (error?.message?.includes("duplicate key")) {
+//         toast.error("A CMS page with this code already exists.");
+//       } else {
+//         toast.error(error?.message || "Failed to save CMS page");
+//       }
+//     } finally {
+//       setIsSubmitting(false);
+//     }
+//   };
+
+//   if (loading) return <div className="p-6">Loading page data...</div>;
+
+//   return (
+//     <div className="p-6 bg-white rounded-xl shadow-md border border-gray-200">
+//       {/* Header */}
+//       <div className="flex justify-between items-center mb-6">
+//         <h2 className="text-2xl font-semibold text-[#043f79]">
+//           {id ? "Edit CMS Page" : "Add New CMS Page"}
+//         </h2>
+//         <button
+//           type="button"
+//           onClick={() => navigate("/admin/cmspages")}
+//           className="bg-[#043f79] text-white px-3 py-1 rounded-md shadow hover:opacity-90 flex items-center gap-2"
+//         >
+//           <FiArrowLeft /> Back
+//         </button>
+//       </div>
+
+//       <form onSubmit={handleSubmit} className="space-y-6">
+//         {/* Title & Slug */}
+//         <div className="grid md:grid-cols-2 gap-6">
+//           <div>
+//             <label className="font-medium text-gray-700">Title</label>
+//             <input
+//               name="title"
+//               value={values.title}
+//               onChange={handleChange}
+//               placeholder="Enter page title"
+//               className="w-full border mt-2 p-2 rounded-md"
+//             />
+//             {errors.title && <p className="text-red-500 text-sm">{errors.title}</p>}
+//           </div>
+//           <div>
+//             <label className="font-medium text-gray-700">Slug</label>
+//             <input
+//               name="slug"
+//               value={values.slug}
+//               onChange={handleChange}
+//               placeholder="Auto-generated slug"
+//               className="w-full border mt-2 p-2 rounded-md"
+//             />
+//             {errors.slug && <p className="text-red-500 text-sm">{errors.slug}</p>}
+//           </div>
+//         </div>
+
+//         {/* Sections */}
+//         <div className="border-gray-200 rounded-md p-4">
+//           <div className="flex justify-between items-center mb-3">
+//             <h3 className="text-lg font-semibold text-[#043f79]">Sections</h3>
+//             <button
+//               type="button"
+//               onClick={() => addItem("sections", { title: "", content: "" })}
+//               className="bg-[#043f79] text-white px-3 py-1 rounded-md flex items-center gap-2 hover:opacity-90"
+//             >
+//               <FiPlus /> Add Section
+//             </button>
+//           </div>
+//           {values.sections.length === 0 && (
+//             <p className="text-sm text-gray-500 italic">No sections added yet.</p>
+//           )}
+//           {values.sections.map((section, i) => (
+//             <div key={i} className="p-3 mb-3 bg-gray-50 border rounded-md">
+//               <input
+//                 placeholder="Section Title"
+//                 value={section.title}
+//                 onChange={(e) => handleSectionChange(i, "title", e.target.value)}
+//                 className="w-full border mt-2 p-2 rounded-md mb-2"
+//               />
+//               <RichTextField
+//                 value={section.content}
+//                 onChange={(val) => handleSectionChange(i, "content", val)}
+//               />
+//               <button
+//                 type="button"
+//                 onClick={() => removeItem("sections", i)}
+//                 className="text-red-600 mt-3 flex items-center gap-1 text-sm"
+//               >
+//                 <FiTrash2 /> Remove
+//               </button>
+//             </div>
+//           ))}
+//         </div>
+
+//         {/* FAQs */}
+//         <div className="border-gray-200 rounded-md p-4">
+//           <div className="flex justify-between items-center mb-3">
+//             <h3 className="text-lg font-semibold text-[#043f79]">FAQs</h3>
+//             <button
+//               type="button"
+//               onClick={() => addItem("faqs", { question: "", answer: "" })}
+//               className="bg-[#043f79] text-white px-3 py-1 rounded-md flex items-center gap-2 hover:opacity-90"
+//             >
+//               <FiPlus /> Add FAQ
+//             </button>
+//           </div>
+//           {values.faqs.length === 0 && (
+//             <p className="text-sm text-gray-500 italic">No FAQs added yet.</p>
+//           )}
+//           {values.faqs.map((faq, i) => (
+//             <div key={i} className="p-3 mb-3 bg-gray-50 border rounded-md">
+//               <input
+//                 placeholder="Question"
+//                 value={faq.question}
+//                 onChange={(e) => handleFAQChange(i, "question", e.target.value)}
+//                 className="w-full border mt-2 p-2 rounded-md mb-2"
+//               />
+//               <RichTextField
+//                 value={faq.answer}
+//                 onChange={(val) => handleFAQChange(i, "answer", val)}
+//               />
+//               <button
+//                 type="button"
+//                 onClick={() => removeItem("faqs", i)}
+//                 className="text-red-600 mt-3 flex items-center gap-1 text-sm"
+//               >
+//                 <FiTrash2 /> Remove
+//               </button>
+//             </div>
+//           ))}
+//         </div>
+
+//         {/* Status */}
+//         <div className="md:w-1/2">
+//           <label className="font-medium text-gray-700">Status</label>
+//           <select
+//             name="status"
+//             value={values.status}
+//             onChange={handleChange}
+//             className="w-full border mt-2 p-2 rounded-md"
+//           >
+//             <option value="draft">Draft</option>
+//             <option value="published">Published</option>
+//             <option value="archived">Archived</option>
+//           </select>
+//         </div>
+
+//         {/* Buttons */}
+//         <div className="flex justify-end gap-4 pt-6  border-gray-200">
+//           <button
+//             type="button"
+//             onClick={resetForm}
+//             className="bg-[#043f79] text-white px-4 py-2 rounded-md flex items-center gap-2 hover:opacity-90"
+//           >
+//             <FiRefreshCw /> Reset
+//           </button>
+//           <button
+//             type="submit"
+//             disabled={isSubmitting}
+//             className="bg-[#043f79] text-white px-4 py-2 rounded-md flex items-center gap-2 hover:opacity-90"
+//           >
+//             <FiSave /> {isSubmitting ? "Saving..." : id ? "Update" : "Save"}
+//           </button>
+//         </div>
+//       </form>
+//     </div>
+//   );
+// }
+
+
+
+// // AddCmsPage.tsx
+// import React, { useState, useEffect, ChangeEvent } from "react";
+// import { useParams, useNavigate } from "react-router-dom";
+// import { FiSave, FiRefreshCw, FiArrowLeft, FiPlus, FiTrash2 } from "react-icons/fi";
+// import { toast } from "react-hot-toast";
+// import { useCommonCrud } from "../hooks/useCommonCrud";
+// import TextEditorCms from "../components/PagesComponent/TextedtiorCms";
+
+// interface Section {
+//   title: string;
+//   content: string;
+//   images?: string[];
+//   videos?: string[];
+//   cta?: { text: string; url: string };
+// }
+
+// interface FAQ {
+//   question: string;
+//   answer: string;
+// }
+
+// interface CmsPageForm {
+//   title: string;
+//   slug: string;
+//   sections: Section[];
+//   faqs: FAQ[];
+//   status: "draft" | "published" | "archived";
+//   is_active?: number;
+//   page_code?: string;
+// }
+
+// const generateSlug = (text: string) =>
+//   text
+//     .toLowerCase()
+//     .trim()
+//     .replace(/[^a-z0-9\s-]/g, "")
+//     .replace(/\s+/g, "-")
+//     .replace(/-+/g, "-");
+
+// export default function AddCmsPage() {
+//   const { role, id } = useParams<{ role?: string; id?: string }>();
+//   const navigate = useNavigate();
+
+//   const { getOne, createRecord, updateRecord } = useCommonCrud({
+//     role: role || "admin",
+//     module: "cmspages",
+//   });
+
+//   const [values, setValues] = useState<CmsPageForm>({
+//     title: "",
+//     slug: "",
+//     sections: [],
+//     faqs: [],
+//     status: "draft",
+//     is_active: 1,
+//   });
+
+//   const [loading, setLoading] = useState(false);
+//   const [isSubmitting, setIsSubmitting] = useState(false);
+//   const [slugEdited, setSlugEdited] = useState(false);
+//   const [errors, setErrors] = useState<Record<string, string>>({});
+
+//   // Fetch CMS page for edit
+//   useEffect(() => {
+//     if (!id) return;
+
+//     const fetchPage = async () => {
+//       setLoading(true);
+//       try {
+//         const res = await getOne(id);
+//         const page = res?.data?.page || res?.page || res;
+
+//         if (!page) {
+//           toast.error("CMS page not found");
+//           navigate("/admin/cmspages");
+//           return;
+//         }
+
+//         setValues({
+//           title: page.title || "",
+//           slug: page.slug || "",
+//           sections: page.sections?.length ? page.sections : [],
+//           faqs: page.faqs?.length ? page.faqs : [],
+//           status: page.status || "draft",
+//           is_active: page.is_active ?? 1,
+//           page_code: page.page_code,
+//         });
+//       } catch (err) {
+//         console.error("Error fetching CMS page:", err);
+//         toast.error("Failed to fetch page details");
+//         navigate("/admin/cmspages");
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
+
+//     fetchPage();
+//     // Only run when 'id' changes
+//   }, [id, navigate]);
+
+//   // Handle input changes and slug auto-generation
+//   const handleChange = (
+//     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+//   ) => {
+//     const { name, value } = e.target;
+//     setValues((prev) => {
+//       const updated = { ...prev, [name]: value };
+//       if (name === "title" && !slugEdited) updated.slug = generateSlug(value);
+//       if (name === "slug") setSlugEdited(true);
+//       return updated;
+//     });
+//     setErrors((prev) => ({ ...prev, [name]: "" }));
+//   };
+
+//   // Sections & FAQs handlers
+//   const addItem = (key: keyof CmsPageForm, item: any) =>
+//     setValues((prev) => ({ ...prev, [key]: [...(prev[key] as any[]), item] }));
+
+//   const removeItem = (key: keyof CmsPageForm, index: number) =>
+//     setValues((prev) => ({
+//       ...prev,
+//       [key]: (prev[key] as any[]).filter((_, i) => i !== index),
+//     }));
+
+//   const handleSectionChange = (index: number, field: keyof Section, value: string) =>
+//     setValues((prev) => {
+//       const updated = [...prev.sections];
+//       updated[index] = { ...updated[index], [field]: value };
+//       return { ...prev, sections: updated };
+//     });
+
+//   const handleFAQChange = (index: number, field: keyof FAQ, value: string) =>
+//     setValues((prev) => {
+//       const updated = [...prev.faqs];
+//       updated[index] = { ...updated[index], [field]: value };
+//       return { ...prev, faqs: updated };
+//     });
+
+//   // Reset form
+//   const resetForm = () => {
+//     setValues({
+//       title: "",
+//       slug: "",
+//       sections: [],
+//       faqs: [],
+//       status: "draft",
+//       is_active: 1,
+//     });
+//     setErrors({});
+//     setSlugEdited(false);
+//   };
+
+//   // Submit form
+//   const handleSubmit = async (e: React.FormEvent) => {
+//     e.preventDefault();
+
+//     const newErrors: Record<string, string> = {};
+//     if (!values.title.trim()) newErrors.title = "Title required";
+//     if (!values.slug.trim()) newErrors.slug = "Slug required";
+//     if (Object.keys(newErrors).length > 0) return setErrors(newErrors);
+
+//     try {
+//       setIsSubmitting(true);
+//       const payload: CmsPageForm = { ...values };
+//       if (!id) delete payload.page_code;
+
+//       if (id) {
+//         await updateRecord(id, payload);
+//         toast.success("CMS page updated successfully");
+//       } else {
+//         await createRecord(payload);
+//         toast.success("CMS page created successfully");
+//       }
+
+//       navigate("/admin/cmspages");
+//     } catch (error: any) {
+//       console.error("Submit error:", error);
+//       if (error?.message?.includes("duplicate key")) {
+//         toast.error("A CMS page with this code already exists.");
+//       } else {
+//         toast.error(error?.message || "Failed to save CMS page");
+//       }
+//     } finally {
+//       setIsSubmitting(false);
+//     }
+//   };
+
+//   if (loading) return <div className="p-6">Loading page data...</div>;
+
+//   return (
+//     <div className="p-6 bg-white rounded-xl shadow-md border border-gray-200">
+//       {/* Header */}
+//       <div className="flex justify-between items-center mb-6">
+//         <h2 className="text-2xl font-semibold text-[#043f79]">
+//           {id ? "Edit CMS Page" : "Add New CMS Page"}
+//         </h2>
+//         <button
+//           type="button"
+//           onClick={() => navigate("/admin/cmspages")}
+//           className="bg-[#043f79] text-white px-3 py-1 rounded-md shadow hover:opacity-90 flex items-center gap-2"
+//         >
+//           <FiArrowLeft /> Back
+//         </button>
+//       </div>
+
+//       <form onSubmit={handleSubmit} className="space-y-6">
+//         {/* Title & Slug */}
+//         <div className="grid md:grid-cols-2 gap-6">
+//           <div>
+//             <label className="font-medium text-gray-700">Title</label>
+//             <input
+//               name="title"
+//               value={values.title}
+//               onChange={handleChange}
+//               placeholder="Enter page title"
+//               className="w-full border mt-2 p-2 rounded-md"
+//             />
+//             {errors.title && <p className="text-red-500 text-sm">{errors.title}</p>}
+//           </div>
+//           <div>
+//             <label className="font-medium text-gray-700">Slug</label>
+//             <input
+//               name="slug"
+//               value={values.slug}
+//               onChange={handleChange}
+//               placeholder="Auto-generated slug"
+//               className="w-full border mt-2 p-2 rounded-md"
+//             />
+//             {errors.slug && <p className="text-red-500 text-sm">{errors.slug}</p>}
+//           </div>
+//         </div>
+
+//         {/* Sections */}
+//         <div className="border-gray-200 rounded-md p-4">
+//           <div className="flex justify-between items-center mb-3">
+//             <h3 className="text-lg font-semibold text-[#043f79]">Sections</h3>
+//             <button
+//               type="button"
+//               onClick={() => addItem("sections", { title: "", content: "" })}
+//               className="bg-[#043f79] text-white px-3 py-1 rounded-md flex items-center gap-2 hover:opacity-90"
+//             >
+//               <FiPlus /> Add Section
+//             </button>
+//           </div>
+//           {values.sections.length === 0 && (
+//             <p className="text-sm text-gray-500 italic">No sections added yet.</p>
+//           )}
+//           {values.sections.map((section, i) => (
+//             <div key={i} className="p-3 mb-3 bg-gray-50 border rounded-md">
+//               <input
+//                 placeholder="Section Title"
+//                 value={section.title}
+//                 onChange={(e) => handleSectionChange(i, "title", e.target.value)}
+//                 className="w-full border mt-2 p-2 rounded-md mb-2"
+//               />
+//               <TextEditorCms
+//                 value={section.content}
+//                 onChange={(val) => handleSectionChange(i, "content", val)}
+//                 height={250}
+//               />
+//               <button
+//                 type="button"
+//                 onClick={() => removeItem("sections", i)}
+//                 className="text-red-600 mt-3 flex items-center gap-1 text-sm"
+//               >
+//                 <FiTrash2 /> Remove
+//               </button>
+//             </div>
+//           ))}
+//         </div>
+
+//         {/* FAQs */}
+//         <div className="border-gray-200 rounded-md p-4">
+//           <div className="flex justify-between items-center mb-3">
+//             <h3 className="text-lg font-semibold text-[#043f79]">FAQs</h3>
+//             <button
+//               type="button"
+//               onClick={() => addItem("faqs", { question: "", answer: "" })}
+//               className="bg-[#043f79] text-white px-3 py-1 rounded-md flex items-center gap-2 hover:opacity-90"
+//             >
+//               <FiPlus /> Add FAQ
+//             </button>
+//           </div>
+//           {values.faqs.length === 0 && (
+//             <p className="text-sm text-gray-500 italic">No FAQs added yet.</p>
+//           )}
+//           {values.faqs.map((faq, i) => (
+//             <div key={i} className="p-3 mb-3 bg-gray-50 border rounded-md">
+//               <input
+//                 placeholder="Question"
+//                 value={faq.question}
+//                 onChange={(e) => handleFAQChange(i, "question", e.target.value)}
+//                 className="w-full border mt-2 p-2 rounded-md mb-2"
+//               />
+//               <TextEditorCms
+//                 value={faq.answer}
+//                 onChange={(val) => handleFAQChange(i, "answer", val)}
+//                 height={200}
+//               />
+//               <button
+//                 type="button"
+//                 onClick={() => removeItem("faqs", i)}
+//                 className="text-red-600 mt-3 flex items-center gap-1 text-sm"
+//               >
+//                 <FiTrash2 /> Remove
+//               </button>
+//             </div>
+//           ))}
+//         </div>
+
+//         {/* Status */}
+//         <div className="md:w-1/2">
+//           <label className="font-medium text-gray-700">Status</label>
+//           <select
+//             name="status"
+//             value={values.status}
+//             onChange={handleChange}
+//             className="w-full border mt-2 p-2 rounded-md"
+//           >
+//             <option value="draft">Draft</option>
+//             <option value="published">Published</option>
+//             <option value="archived">Archived</option>
+//           </select>
+//         </div>
+
+//         {/* Buttons */}
+//         <div className="flex justify-end gap-4 pt-6 border-t border-gray-200">
+//           <button
+//             type="button"
+//             onClick={resetForm}
+//             className="bg-[#043f79] text-white px-4 py-2 rounded-md flex items-center gap-2 hover:opacity-90"
+//           >
+//             <FiRefreshCw /> Reset
+//           </button>
+//           <button
+//             type="submit"
+//             disabled={isSubmitting}
+//             className="bg-[#043f79] text-white px-4 py-2 rounded-md flex items-center gap-2 hover:opacity-90"
+//           >
+//             <FiSave /> {isSubmitting ? "Saving..." : id ? "Update" : "Save"}
+//           </button>
+//         </div>
+//       </form>
+//     </div>
+//   );
+// }
+
+
+// AddCmsPage.tsx
+import React, { useState, useEffect, ChangeEvent } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { FiSave, FiRefreshCw, FiArrowLeft, FiPlus, FiTrash2 } from "react-icons/fi";
+import { toast } from "react-hot-toast";
+import { useCommonCrud } from "../hooks/useCommonCrud";
+import { RichTextField } from "../components/PagesComponent/RichTextField";
+
+interface Section {
+  title: string;
+  content: string;
+  images?: string[];
+  videos?: string[];
+  cta?: { text: string; url: string };
+}
+
+interface FAQ {
+  question: string;
+  answer: string;
+}
+
+interface CmsPageForm {
+  title: string;
+  slug: string;
+  sections: Section[];
+  faqs: FAQ[];
+  status: "draft" | "published" | "archived";
+  is_active?: number;
+  page_code?: string;
+}
+
+const generateSlug = (text: string) =>
+  text
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+
+export default function AddCmsPage() {
+  const { role, id } = useParams<{ role?: string; id?: string }>();
+  const navigate = useNavigate();
+
+  const { getOne, createRecord, updateRecord } = useCommonCrud({
+    role: role || "admin",
+    module: "cmspages",
+  });
+
+  const [values, setValues] = useState<CmsPageForm>({
+    title: "",
+    slug: "",
+    sections: [],
+    faqs: [],
+    status: "draft",
+    is_active: 1,
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [slugEdited, setSlugEdited] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Fetch CMS page for edit
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchPage = async () => {
+      setLoading(true);
+      try {
+        const res = await getOne(id);
+        const page = res?.data?.page || res?.page || res;
+
+        if (!page) {
+          toast.error("CMS page not found");
+          navigate("/admin/cmspages");
+          return;
+        }
+
+        setValues({
+          title: page.title || "",
+          slug: page.slug || "",
+          sections: page.sections?.length ? page.sections : [],
+          faqs: page.faqs?.length ? page.faqs : [],
+          status: page.status || "draft",
+          is_active: page.is_active ?? 1,
+          page_code: page.page_code,
+        });
+      } catch (err) {
+        console.error("Error fetching CMS page:", err);
+        toast.error("Failed to fetch page details");
+        navigate("/admin/cmspages");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPage();
+  }, [id, navigate]);
+
+  const handleChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setValues((prev) => {
+      const updated = { ...prev, [name]: value };
+      if (name === "title" && !slugEdited) updated.slug = generateSlug(value);
+      if (name === "slug") setSlugEdited(true);
+      return updated;
+    });
+    setErrors((prev) => ({ ...prev, [name]: "" }));
+  };
+
+  const addItem = (key: keyof CmsPageForm, item: any) =>
+    setValues((prev) => ({ ...prev, [key]: [...(prev[key] as any[]), item] }));
+
+  const removeItem = (key: keyof CmsPageForm, index: number) =>
+    setValues((prev) => ({
+      ...prev,
+      [key]: (prev[key] as any[]).filter((_, i) => i !== index),
+    }));
+
+  const handleSectionChange = (index: number, field: keyof Section, value: string) =>
+    setValues((prev) => {
+      const updated = [...prev.sections];
+      updated[index] = { ...updated[index], [field]: value };
+      return { ...prev, sections: updated };
+    });
+
+  const handleFAQChange = (index: number, field: keyof FAQ, value: string) =>
+    setValues((prev) => {
+      const updated = [...prev.faqs];
+      updated[index] = { ...updated[index], [field]: value };
+      return { ...prev, faqs: updated };
+    });
+
+  const resetForm = () => {
+    setValues({
+      title: "",
+      slug: "",
+      sections: [],
+      faqs: [],
+      status: "draft",
+      is_active: 1,
+    });
+    setErrors({});
+    setSlugEdited(false);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const newErrors: Record<string, string> = {};
+    if (!values.title.trim()) newErrors.title = "Title required";
+    if (!values.slug.trim()) newErrors.slug = "Slug required";
+    if (Object.keys(newErrors).length > 0) return setErrors(newErrors);
+
+    try {
+      setIsSubmitting(true);
+      const payload: CmsPageForm = { ...values };
+      if (!id) delete payload.page_code;
+
+      if (id) {
+        await updateRecord(id, payload);
+        toast.success("CMS page updated successfully");
+      } else {
+        await createRecord(payload);
+        toast.success("CMS page created successfully");
+      }
+
+      navigate("/admin/cmspages");
+    } catch (error: any) {
+      console.error("Submit error:", error);
+      if (error?.message?.includes("duplicate key")) {
+        toast.error("A CMS page with this code already exists.");
+      } else {
+        toast.error(error?.message || "Failed to save CMS page");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (loading) return <div className="p-6">Loading page data...</div>;
+
+  return (
+    <div className="p-6 bg-white rounded-xl shadow-md border border-gray-200">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-semibold text-[#043f79]">
+          {id ? "Edit CMS Page" : "Add New CMS Page"}
+        </h2>
+        <button
+          type="button"
+          onClick={() => navigate("/admin/cmspages")}
+          className="bg-[#043f79] text-white px-3 py-1 rounded-md shadow hover:opacity-90 flex items-center gap-2"
+        >
+          <FiArrowLeft /> Back
+        </button>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Title & Slug */}
+        <div className="grid md:grid-cols-2 gap-6">
+          <div>
+            <label className="font-medium text-gray-700">Title</label>
+            <input
+              name="title"
+              value={values.title}
+              onChange={handleChange}
+              placeholder="Enter page title"
+              className="w-full border mt-2 p-2 rounded-md"
+            />
+            {errors.title && <p className="text-red-500 text-sm">{errors.title}</p>}
+          </div>
+          <div>
+            <label className="font-medium text-gray-700">Slug</label>
+            <input
+              name="slug"
+              value={values.slug}
+              onChange={handleChange}
+              placeholder="Auto-generated slug"
+              className="w-full border mt-2 p-2 rounded-md"
+            />
+            {errors.slug && <p className="text-red-500 text-sm">{errors.slug}</p>}
+          </div>
+        </div>
+
+        {/* Sections */}
+        <div className="border-gray-200 rounded-md p-4">
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="text-lg font-semibold text-[#043f79]">Sections</h3>
+            <button
+              type="button"
+              onClick={() => addItem("sections", { title: "", content: "" })}
+              className="bg-[#043f79] text-white px-3 py-1 rounded-md flex items-center gap-2 hover:opacity-90"
+            >
+              <FiPlus /> Add Section
+            </button>
+          </div>
+          {values.sections.length === 0 && (
+            <p className="text-sm text-gray-500 italic">No sections added yet.</p>
+          )}
+          {values.sections.map((section, i) => (
+            <div key={i} className="p-3 mb-3 bg-gray-50 border rounded-md">
+              <input
+                placeholder="Section Title"
+                value={section.title}
+                onChange={(e) => handleSectionChange(i, "title", e.target.value)}
+                className="w-full border mt-2 p-2 rounded-md mb-2"
+              />
+              <RichTextField
+                value={section.content}
+                onChange={(val) => handleSectionChange(i, "content", val)}
+                
+              />
+              <button
+                type="button"
+                onClick={() => removeItem("sections", i)}
+                className="text-red-600 mt-3 flex items-center gap-1 text-sm"
+              >
+                <FiTrash2 /> Remove
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {/* FAQs */}
+        <div className="border-gray-200 rounded-md p-4">
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="text-lg font-semibold text-[#043f79]">FAQs</h3>
+            <button
+              type="button"
+              onClick={() => addItem("faqs", { question: "", answer: "" })}
+              className="bg-[#043f79] text-white px-3 py-1 rounded-md flex items-center gap-2 hover:opacity-90"
+            >
+              <FiPlus /> Add FAQ
+            </button>
+          </div>
+          {values.faqs.length === 0 && (
+            <p className="text-sm text-gray-500 italic">No FAQs added yet.</p>
+          )}
+          {values.faqs.map((faq, i) => (
+            <div key={i} className="p-3 mb-3 bg-gray-50 border rounded-md">
+              <input
+                placeholder="Question"
+                value={faq.question}
+                onChange={(e) => handleFAQChange(i, "question", e.target.value)}
+                className="w-full border mt-2 p-2 rounded-md mb-2"
+              />
+              <RichTextField
+                value={faq.answer}
+                onChange={(val) => handleFAQChange(i, "answer", val)}
+                height={250} // Set height for FAQ answer
+              />
+              <button
+                type="button"
+                onClick={() => removeItem("faqs", i)}
+                className="text-red-600 mt-3 flex items-center gap-1 text-sm"
+              >
+                <FiTrash2 /> Remove
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {/* Status */}
+        <div className="md:w-1/2">
+          <label className="font-medium text-gray-700">Status</label>
+          <select
+            name="status"
+            value={values.status}
+            onChange={handleChange}
+            className="w-full border mt-2 p-2 rounded-md"
+          >
+            <option value="draft">Draft</option>
+            <option value="published">Published</option>
+            <option value="archived">Archived</option>
+          </select>
+        </div>
+
+        {/* Buttons */}
+        <div className="flex justify-end gap-4 pt-6 border-t border-gray-200">
+          <button
+            type="button"
+            onClick={resetForm}
+            className="bg-[#043f79] text-white px-4 py-2 rounded-md flex items-center gap-2 hover:opacity-90"
+          >
+            <FiRefreshCw /> Reset
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="bg-[#043f79] text-white px-4 py-2 rounded-md flex items-center gap-2 hover:opacity-90"
+          >
+            <FiSave /> {isSubmitting ? "Saving..." : id ? "Update" : "Save"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
