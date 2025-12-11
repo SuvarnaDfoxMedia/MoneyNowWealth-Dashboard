@@ -7,7 +7,7 @@ const PrivacyPolicyPage = () => {
   const { page, loading, error } = useFetchPrivacyPolicy();
 
   if (loading)
-    return <p className="text-center py-10 text-lg font-medium">Loading...cms1</p>;
+    return <p className="text-center py-10 text-lg font-medium">Loading..</p>;
 
   if (error)
     return (
