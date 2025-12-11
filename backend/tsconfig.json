@@ -1,5 +1,4 @@
 {
-<<<<<<< HEAD
   "compilerOptions": {
     "target": "ES2022",
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
@@ -25,11 +24,4 @@
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist"]
-=======
-  "files": [],
-  "references": [
-    { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" }
-  ]
->>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
 }

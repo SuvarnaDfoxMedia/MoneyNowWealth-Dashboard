@@ -1,8 +1,5 @@
-<<<<<<< HEAD
 
 
-=======
->>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
 import { useState } from "react";
 import { useNavigate, Link } from "react-router";
 import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "../../icons";
@@ -32,12 +29,9 @@ export default function SignUpForm() {
   }>({});
   const navigate = useNavigate();
 
-<<<<<<< HEAD
   //  Use environment variable from .env
   const API_BASE = import.meta.env.VITE_API_BASE;
 
-=======
->>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
   const validateFields = () => {
     const newErrors: typeof errors = {};
 
@@ -45,7 +39,6 @@ export default function SignUpForm() {
     if (!lastname.trim()) newErrors.lastname = "Last name is required.";
 
     if (!email.trim()) newErrors.email = "Email is required.";
-<<<<<<< HEAD
     else if (!/^\S+@\S+\.\S+$/.test(email))
       newErrors.email = "Please enter a valid email address.";
 
@@ -60,24 +53,12 @@ export default function SignUpForm() {
 
     if (!isChecked)
       newErrors.terms = "You must accept the Terms and Conditions.";
-=======
-    else if (!/^\S+@\S+\.\S+$/.test(email)) newErrors.email = "Please enter a valid email address.";
-
-    if (!password.trim()) newErrors.password = "Password is required.";
-    else if (password.length < 8) newErrors.password = "Password must be at least 8 characters long.";
-
-    if (!confirmPassword.trim()) newErrors.confirmPassword = "Confirm password is required.";
-    else if (password !== confirmPassword) newErrors.confirmPassword = "Passwords do not match.";
-
-    if (!isChecked) newErrors.terms = "You must accept the Terms and Conditions.";
->>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSignup = async (e: React.FormEvent) => {
-<<<<<<< HEAD
     e.preventDefault();
     setErrors({});
 
@@ -124,76 +105,28 @@ export default function SignUpForm() {
           </Link>
         </div>
 
-=======
-  e.preventDefault();
-  setErrors({});
-
-  if (!validateFields()) return;
-
-  const toastId = toast.loading("Registering...");
-
-  try {
-    await axios.post(
-      "http://localhost:5000/api/auth/register",
-      { firstname, lastname, email, password, termsAccepted: isChecked },
-      { withCredentials: true }
-    );
-
-    toast.success("Signup successful! Please login.", { id: toastId });
-    setTimeout(() => navigate("/signin"), 1000);
-  } catch (err: any) {
-    const backendMsg = err.response?.data?.message || "Signup failed! Try again.";
-    if (backendMsg.toLowerCase().includes("email")) setErrors({ email: backendMsg });
-    else if (backendMsg.toLowerCase().includes("password")) setErrors({ password: backendMsg });
-    else toast.error(backendMsg, { id: toastId });
-  }
-};
-
-  return (
-    <div className="flex flex-col flex-1 w-full overflow-y-auto lg:w-1/2 no-scrollbar">
-      
-      <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
-        <div className="w-full max-w-md mx-auto mb-5 sm:pt-10">
-        <Link
-          to="/"
-          className="inline-flex items-center text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-        >
-          <ChevronLeftIcon className="size-5" />
-          Back to dashboard
-        </Link>
-      </div>
->>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
         <div>
           <div className="mb-5 sm:mb-8">
             <h1 className="mb-2 font-semibold text-gray-800 text-title-sm dark:text-white/90 sm:text-title-md">
               Sign Up
             </h1>
-<<<<<<< HEAD
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Enter your details to create a new account.
             </p>
-=======
-            <p className="text-sm text-gray-500 dark:text-gray-400">Enter your details to create a new account.</p>
->>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
           </div>
 
           <form onSubmit={handleSignup} noValidate>
             <div className="space-y-5">
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                 <div>
-<<<<<<< HEAD
                   <Label>
                     First Name<span className="text-error-500">*</span>
                   </Label>
-=======
-                  <Label>First Name<span className="text-error-500">*</span></Label>
->>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
                   <Input
                     type="text"
                     placeholder="Enter your first name"
                     value={firstname}
                     onChange={(e) => setFname(e.target.value)}
-<<<<<<< HEAD
                     className={
                       errors.firstname ? "border-red-500 ring-1 ring-red-500" : ""
                     }
@@ -209,21 +142,11 @@ export default function SignUpForm() {
                   <Label>
                     Last Name<span className="text-error-500">*</span>
                   </Label>
-=======
-                    className={errors.firstname ? "border-red-500 ring-1 ring-red-500" : ""}
-                  />
-                  {errors.firstname && <p className="text-red-500 text-sm mt-1">{errors.firstname}</p>}
-                </div>
-
-                <div>
-                  <Label>Last Name<span className="text-error-500">*</span></Label>
->>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
                   <Input
                     type="text"
                     placeholder="Enter your last name"
                     value={lastname}
                     onChange={(e) => setLname(e.target.value)}
-<<<<<<< HEAD
                     className={
                       errors.lastname ? "border-red-500 ring-1 ring-red-500" : ""
                     }
@@ -233,28 +156,18 @@ export default function SignUpForm() {
                       {errors.lastname}
                     </p>
                   )}
-=======
-                    className={errors.lastname ? "border-red-500 ring-1 ring-red-500" : ""}
-                  />
-                  {errors.lastname && <p className="text-red-500 text-sm mt-1">{errors.lastname}</p>}
->>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
                 </div>
               </div>
 
               <div>
-<<<<<<< HEAD
                 <Label>
                   Email<span className="text-error-500">*</span>
                 </Label>
-=======
-                <Label>Email<span className="text-error-500">*</span></Label>
->>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
                 <Input
                   type="email"
                   placeholder="Enter your email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-<<<<<<< HEAD
                   className={
                     errors.email ? "border-red-500 ring-1 ring-red-500" : ""
                   }
@@ -268,22 +181,12 @@ export default function SignUpForm() {
                 <Label>
                   Password<span className="text-error-500">*</span>
                 </Label>
-=======
-                  className={errors.email ? "border-red-500 ring-1 ring-red-500" : ""}
-                />
-                {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
-              </div>
-
-              <div>
-                <Label>Password<span className="text-error-500">*</span></Label>
->>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
                 <div className="relative">
                   <Input
                     type={showPassword ? "text" : "password"}
                     placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-<<<<<<< HEAD
                     className={
                       errors.password ? "border-red-500 ring-1 ring-red-500" : ""
                     }
@@ -308,26 +211,12 @@ export default function SignUpForm() {
                 <Label>
                   Confirm Password<span className="text-error-500">*</span>
                 </Label>
-=======
-                    className={errors.password ? "border-red-500 ring-1 ring-red-500" : ""}
-                  />
-                  <span onClick={() => setShowPassword(!showPassword)} className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2">
-                    {showPassword ? <EyeIcon className="fill-gray-500 dark:fill-gray-400 size-5" /> : <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400 size-5" />}
-                  </span>
-                </div>
-                {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
-              </div>
-
-              <div>
-                <Label>Confirm Password<span className="text-error-500">*</span></Label>
->>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
                 <div className="relative">
                   <Input
                     type={showConfirmPassword ? "text" : "password"}
                     placeholder="Confirm your password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-<<<<<<< HEAD
                     className={
                       errors.confirmPassword
                         ? "border-red-500 ring-1 ring-red-500"
@@ -370,24 +259,6 @@ export default function SignUpForm() {
                 <Button className="w-full" size="sm" type="submit">
                   Sign Up
                 </Button>
-=======
-                    className={errors.confirmPassword ? "border-red-500 ring-1 ring-red-500" : ""}
-                  />
-                  <span onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2">
-                    {showConfirmPassword ? <EyeIcon className="fill-gray-500 dark:fill-gray-400 size-5" /> : <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400 size-5" />}
-                  </span>
-                </div>
-                {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>}
-              </div>
-
-              <div className="flex flex-col items-start gap-2">
-                <Checkbox id="terms" checked={isChecked} onChange={setIsChecked} label="I agree to the Terms and Conditions and Privacy Policy" />
-                {errors.terms && <p className="text-red-500 text-sm mt-1">{errors.terms}</p>}
-              </div>
-
-              <div>
-                <Button className="w-full" size="sm" type="submit">Sign Up</Button>
->>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
               </div>
             </div>
           </form>
@@ -395,16 +266,12 @@ export default function SignUpForm() {
           <div className="mt-5">
             <p className="text-sm font-normal text-center text-gray-700 dark:text-gray-400 sm:text-start">
               Already have an account?{" "}
-<<<<<<< HEAD
               <Link
                 to="/signin"
                 className="text-brand-500 hover:text-brand-600 dark:text-brand-400"
               >
                 Sign In
               </Link>
-=======
-              <Link to="/signin" className="text-brand-500 hover:text-brand-600 dark:text-brand-400">Sign In</Link>
->>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
             </p>
           </div>
         </div>

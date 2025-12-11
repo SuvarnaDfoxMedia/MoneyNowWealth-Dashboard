@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 // import { defineConfig } from "vite";
 // import react from "@vitejs/plugin-react";
 // import svgr from "vite-plugin-svgr";
@@ -19,32 +18,21 @@
 // });
 
 
-=======
->>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import svgr from "vite-plugin-svgr";
 
-<<<<<<< HEAD
-=======
-// https://vite.dev/config/
->>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
 export default defineConfig({
   plugins: [
     react(),
     svgr({
       svgrOptions: {
         icon: true,
-<<<<<<< HEAD
-=======
-        // This will transform your SVG to a React component
->>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
         exportType: "named",
         namedExport: "ReactComponent",
       },
     }),
   ],
-<<<<<<< HEAD
 
   // ⚡ Fix eval() warnings from libraries like @react-jvectormap
   esbuild: {
@@ -66,6 +54,4 @@ export default defineConfig({
       },
     },
   },
-=======
->>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
 });
