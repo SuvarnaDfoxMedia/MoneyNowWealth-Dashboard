@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // import js from '@eslint/js'
 // import globals from 'globals'
 // import reactHooks from 'eslint-plugin-react-hooks'
@@ -28,6 +29,8 @@
 // )
 
 
+=======
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
 import js from '@eslint/js'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
@@ -53,8 +56,11 @@ export default tseslint.config(
         'warn',
         { allowConstantExport: true },
       ],
+<<<<<<< HEAD
 
       // '@typescript-eslint/no-explicit-any': 'off',
+=======
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
     },
   },
 )

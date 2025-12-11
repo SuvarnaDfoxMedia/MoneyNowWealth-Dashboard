@@ -2,6 +2,11 @@ import { useEffect, useRef, useState } from "react";
 
 import { Link } from "react-router";
 import { useSidebar } from "../context/SidebarContext";
+<<<<<<< HEAD
+=======
+import { ThemeToggleButton } from "../components/common/ThemeToggleButton";
+import NotificationDropdown from "../components/header/NotificationDropdown";
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
 import UserDropdown from "../components/header/UserDropdown";
 
 const AppHeader: React.FC = () => {

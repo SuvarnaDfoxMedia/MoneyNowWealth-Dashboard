@@ -1,5 +1,6 @@
 
 
+<<<<<<< HEAD
 // import { useState, useEffect } from "react";
 // import { DropdownItem } from "../ui/dropdown/DropdownItem";
 // import { Dropdown } from "../ui/dropdown/Dropdown";
@@ -90,16 +91,28 @@
 // }
 
 
+=======
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
 import { useState, useEffect } from "react";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { useNavigate } from "react-router";
+<<<<<<< HEAD
 import { toast } from "react-hot-toast";
 import { useAuth } from "../../context/AuthContext";
 
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const { user, logout } = useAuth();
+=======
+import axios from "axios";
+import { toast } from "react-hot-toast";
+import { useAuth } from "../../context/AuthContext"; // <-- use this
+
+export default function UserDropdown() {
+  const [isOpen, setIsOpen] = useState(false);
+  const { user, refreshUser, logout } = useAuth(); // <-- use useAuth
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
   const [imageVersion, setImageVersion] = useState(Date.now());
   const navigate = useNavigate();
 
@@ -111,7 +124,11 @@ export default function UserDropdown() {
   const handleLogout = async () => {
     closeDropdown();
     try {
+<<<<<<< HEAD
       await logout();
+=======
+      await logout(); // <-- use logout from AuthContext
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
       toast.success("Logged out successfully!");
       navigate("/signin");
     } catch (err: any) {
@@ -121,6 +138,7 @@ export default function UserDropdown() {
 
   useEffect(() => {
     if (user?.profileImage) setImageVersion(Date.now());
+<<<<<<< HEAD
   }, [user?.profileImage]);
 
   // -----------------------------
@@ -129,6 +147,14 @@ export default function UserDropdown() {
   const firstName = user?.firstname || "Admin";
   const lastName = user?.lastname || "";
   const fullName = `${firstName} ${lastName}`.trim();
+=======
+    refreshUser();
+  }, [user?.profileImage]);
+
+  const firstName = user?.firstname ?? (user?.name ? user.name.split(" ")[0] : "Admin");
+  const lastName = user?.lastname ?? (user?.name ? user.name.split(" ").slice(1).join(" ") : "");
+  const fullName = user ? `${firstName} ${lastName}`.trim() : "Admin";
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
 
   const profileImage = user?.profileImage
     ? `${backendUrl}${user.profileImage}?v=${imageVersion}`
@@ -136,9 +162,20 @@ export default function UserDropdown() {
 
   const role = user?.role || "user";
 
+<<<<<<< HEAD
   const handleNavigation = (page: "profile" | "change-password") => {
     closeDropdown();
     navigate(`/${role}/${page}`);
+=======
+  // Role-aware navigation
+  const handleNavigation = (page: "profile" | "change-password") => {
+    closeDropdown();
+    if (role === "user") {
+      navigate(`/user/${page}`);
+    } else {
+      navigate(`/${role}/${page}`);
+    }
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
   };
 
   return (

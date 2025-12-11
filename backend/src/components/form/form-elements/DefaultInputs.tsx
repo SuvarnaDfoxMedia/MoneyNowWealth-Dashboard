@@ -4,7 +4,11 @@ import Label from "../Label";
 import Input from "../input/InputField";
 import Select from "../Select";
 import { EyeCloseIcon, EyeIcon, TimeIcon } from "../../../icons";
+<<<<<<< HEAD
 import DatePicker from "../date-picker";
+=======
+import DatePicker from "../date-picker.tsx";
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
 
 export default function DefaultInputs() {
   const [showPassword, setShowPassword] = useState(false);

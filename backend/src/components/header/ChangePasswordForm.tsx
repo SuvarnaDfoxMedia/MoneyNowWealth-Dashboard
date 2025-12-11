@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // import { useState } from "react";
 // import { useNavigate, Link } from "react-router";
 // import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "../../icons";
@@ -274,13 +275,22 @@
 
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+=======
+import { useState } from "react";
+import { useNavigate, Link } from "react-router";
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
 import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "../../icons";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Button from "../ui/button/Button";
+<<<<<<< HEAD
 import toast from "react-hot-toast";
 import { axiosApi } from "../../api/axios"; // centralized axios instance
 import { useAuth } from "../../context/AuthContext";
+=======
+import axios from "axios";
+import toast from "react-hot-toast";
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
 
 export default function ChangePasswordForm() {
   const [oldPassword, setOldPassword] = useState("");
@@ -292,6 +302,7 @@ export default function ChangePasswordForm() {
   const [errors, setErrors] = useState<{ oldPassword?: string; newPassword?: string; confirmPassword?: string }>({});
   const [touched, setTouched] = useState(false);
   const [loading, setLoading] = useState(false);
+<<<<<<< HEAD
 
   const navigate = useNavigate();
   const { refreshUser } = useAuth(); // refresh user after password change
@@ -300,13 +311,31 @@ export default function ChangePasswordForm() {
   const getPasswordStrength = (password: string) => {
     if (password.length === 0) return "";
     if (password.length < 6) return "Weak";
+=======
+  const navigate = useNavigate();
+
+  const backendUrl = "http://localhost:5000"; 
+
+  
+  const getPasswordStrength = (password: string) => {
+    if (password.length === 0) return "";
+    if (password.length < 6) return "Weak" ;
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
     if (password.match(/(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[\W])/)) return "Strong";
     if (password.match(/(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])/)) return "Medium";
     return "Weak";
   };
 
+<<<<<<< HEAD
   const passwordStrength = getPasswordStrength(newPassword);
 
+=======
+  
+
+  const passwordStrength = getPasswordStrength(newPassword);
+
+  
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
   const passwordStrengthColor = () => {
     switch (passwordStrength) {
       case "Strong":
@@ -320,6 +349,7 @@ export default function ChangePasswordForm() {
     }
   };
 
+<<<<<<< HEAD
   // ---------------- Validation ----------------
   const validateFields = () => {
     const newErrors: typeof errors = {};
@@ -334,10 +364,38 @@ export default function ChangePasswordForm() {
 
     setErrors(newErrors);
     Object.values(newErrors).forEach((msg) => msg && toast.error(msg));
+=======
+  const validateFields = () => {
+    const newErrors: typeof errors = {};
+
+    if (!oldPassword.trim()) {
+      newErrors.oldPassword = "Old password is required.";
+    }
+
+    if (!newPassword.trim()) {
+      newErrors.newPassword = "New password is required.";
+    } else if (passwordStrength === "Weak") {
+      newErrors.newPassword = "Password is too weak(It Must be uppercase, lowercase, numbers and special char).";
+    }
+
+    if (!confirmPassword.trim()) {
+      newErrors.confirmPassword = "Confirm password is required.";
+    } else if (newPassword !== confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match.";
+    }
+
+    setErrors(newErrors);
+
+    
+    Object.values(newErrors).forEach((msg) => {
+      if (msg) toast.error(msg);
+    });
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
 
     return Object.keys(newErrors).length === 0;
   };
 
+<<<<<<< HEAD
   // ---------------- Handle Submit ----------------
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -345,17 +403,39 @@ export default function ChangePasswordForm() {
     setErrors({});
 
     if (!validateFields()) return;
+=======
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    setTouched(true);
+    setErrors({}); 
+
+    if (!validateFields()) {
+      return;
+    }
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
 
     setLoading(true);
 
     try {
+<<<<<<< HEAD
       const res = await axiosApi.post<{ message: string }>("/auth/change-password", { oldPassword, newPassword });
 
       toast.success(res.message || "Password changed successfully!");
+=======
+      const res = await axios.post(
+        `${backendUrl}/api/auth/change-password`,
+        { oldPassword, newPassword },
+        { withCredentials: true }
+      );
+
+      toast.success(res.data.message || "Password changed successfully!");
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
       setOldPassword("");
       setNewPassword("");
       setConfirmPassword("");
       setTouched(false);
+<<<<<<< HEAD
 
       await refreshUser(); // refresh AuthContext user
       navigate(-1); // go back
@@ -368,6 +448,22 @@ export default function ChangePasswordForm() {
       else setErrors({ confirmPassword: backendMsg });
 
       toast.error(backendMsg);
+=======
+      navigate(-1); 
+    } catch (err: any) {
+      const backendMsg = err.response?.data?.message || "Something went wrong";
+
+      if (backendMsg.toLowerCase().includes("old password")) {
+        setErrors({ oldPassword: backendMsg });
+        toast.error(backendMsg);
+      } else if (backendMsg.toLowerCase().includes("new password")) {
+        setErrors({ newPassword: backendMsg });
+        toast.error(backendMsg);
+      } else {
+        setErrors({ confirmPassword: backendMsg });
+        toast.error(backendMsg);
+      }
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
     } finally {
       setLoading(false);
     }
@@ -376,9 +472,15 @@ export default function ChangePasswordForm() {
   const glowIfEmpty = (value: string, error?: string) =>
     touched && !value.trim() && !error ? "ring-2 ring-red-400" : "";
 
+<<<<<<< HEAD
   // ---------------- Render ----------------
   return (
     <div className="flex flex-col items-center justify-center min-h-screen pt-20 pb-20 space-y-8">
+=======
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen pt-20 pb-20 space-y-8">
+      
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
       <div className="w-full max-w-md">
         <Link
           to="/"
@@ -389,18 +491,32 @@ export default function ChangePasswordForm() {
         </Link>
       </div>
 
+<<<<<<< HEAD
+=======
+    
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
       <div className="w-full max-w-md">
         <div className="flex flex-col justify-center w-full mx-auto">
           <div className="mb-5 sm:mb-8">
             <h1 className="mb-2 font-semibold text-gray-800 text-title-sm dark:text-white/90 sm:text-title-md">
               Change Password
             </h1>
+<<<<<<< HEAD
             <p className="text-sm text-gray-500 dark:text-gray-400">Enter your old password and choose a new one</p>
+=======
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Enter your old password and choose a new one
+            </p>
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
           </div>
 
           <form onSubmit={handleSubmit} noValidate>
             <div className="space-y-6">
+<<<<<<< HEAD
               {/* Old Password */}
+=======
+              
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
               <div>
                 <Label>
                   Old Password <span className="text-error-500">*</span>
@@ -411,17 +527,38 @@ export default function ChangePasswordForm() {
                     type={showOldPassword ? "text" : "password"}
                     value={oldPassword}
                     onChange={(e) => setOldPassword(e.target.value)}
+<<<<<<< HEAD
                     className={`${errors.oldPassword ? "border-red-500 ring-1 ring-red-500" : glowIfEmpty(oldPassword, errors.oldPassword)}`}
+=======
+                    className={`${
+                      errors.oldPassword
+                        ? "border-red-500 ring-1 ring-red-500"
+                        : glowIfEmpty(oldPassword, errors.oldPassword)
+                    }`}
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
                     autoComplete="current-password"
                   />
                   <span
                     onClick={() => setShowOldPassword(!showOldPassword)}
                     className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2"
                   >
+<<<<<<< HEAD
                     {showOldPassword ? <EyeIcon className="fill-gray-500 dark:fill-gray-400 size-5" /> : <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400 size-5" />}
                   </span>
                 </div>
                 {errors.oldPassword && <p className="text-red-500 text-sm mt-1">{errors.oldPassword}</p>}
+=======
+                    {showOldPassword ? (
+                      <EyeIcon className="fill-gray-500 dark:fill-gray-400 size-5" />
+                    ) : (
+                      <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400 size-5" />
+                    )}
+                  </span>
+                </div>
+                {errors.oldPassword && (
+                  <p className="text-red-500 text-sm mt-1">{errors.oldPassword}</p>
+                )}
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
               </div>
 
               {/* New Password */}
@@ -435,13 +572,22 @@ export default function ChangePasswordForm() {
                     type={showNewPassword ? "text" : "password"}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
+<<<<<<< HEAD
                     className={`${errors.newPassword ? "border-red-500 ring-1 ring-red-500" : glowIfEmpty(newPassword, errors.newPassword)}`}
+=======
+                    className={`${
+                      errors.newPassword
+                        ? "border-red-500 ring-1 ring-red-500"
+                        : glowIfEmpty(newPassword, errors.newPassword)
+                    }`}
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
                     autoComplete="new-password"
                   />
                   <span
                     onClick={() => setShowNewPassword(!showNewPassword)}
                     className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2"
                   >
+<<<<<<< HEAD
                     {showNewPassword ? <EyeIcon className="fill-gray-500 dark:fill-gray-400 size-5" /> : <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400 size-5" />}
                   </span>
                 </div>
@@ -449,6 +595,24 @@ export default function ChangePasswordForm() {
                   <p className={`mt-1 text-sm font-semibold ${passwordStrengthColor()}`}>Password Strength: {passwordStrength}</p>
                 )}
                 {errors.newPassword && <p className="text-red-500 text-sm mt-1">{errors.newPassword}</p>}
+=======
+                    {showNewPassword ? (
+                      <EyeIcon className="fill-gray-500 dark:fill-gray-400 size-5" />
+                    ) : (
+                      <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400 size-5" />
+                    )}
+                  </span>
+                </div>
+              
+                {newPassword && !errors.newPassword && (
+                  <p className={`mt-1 text-sm font-semibold ${passwordStrengthColor()}`}>
+                    Password Strength: {passwordStrength}
+                  </p>
+                )}
+                {errors.newPassword && (
+                  <p className="text-red-500 text-sm mt-1">{errors.newPassword}</p>
+                )}
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
               </div>
 
               {/* Confirm Password */}
@@ -462,19 +626,43 @@ export default function ChangePasswordForm() {
                     type={showConfirmPassword ? "text" : "password"}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
+<<<<<<< HEAD
                     className={`${errors.confirmPassword ? "border-red-500 ring-1 ring-red-500" : glowIfEmpty(confirmPassword, errors.confirmPassword)}`}
+=======
+                    className={`${
+                      errors.confirmPassword
+                        ? "border-red-500 ring-1 ring-red-500"
+                        : glowIfEmpty(confirmPassword, errors.confirmPassword)
+                    }`}
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
                     autoComplete="new-password"
                   />
                   <span
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2"
                   >
+<<<<<<< HEAD
                     {showConfirmPassword ? <EyeIcon className="fill-gray-500 dark:fill-gray-400 size-5" /> : <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400 size-5" />}
                   </span>
                 </div>
                 {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>}
               </div>
 
+=======
+                    {showConfirmPassword ? (
+                      <EyeIcon className="fill-gray-500 dark:fill-gray-400 size-5" />
+                    ) : (
+                      <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400 size-5" />
+                    )}
+                  </span>
+                </div>
+                {errors.confirmPassword && (
+                  <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>
+                )}
+              </div>
+
+      
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
               <div>
                 <Button className="w-full" size="sm" type="submit" disabled={loading}>
                   {loading ? "Changing..." : "Change Password"}
@@ -487,4 +675,7 @@ export default function ChangePasswordForm() {
     </div>
   );
 }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
