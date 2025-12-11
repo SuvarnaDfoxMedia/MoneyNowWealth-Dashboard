@@ -21,7 +21,6 @@ const PrivacyPolicyPage = () => {
       {/* Page Title */}
       <h1 className="text-3xl font-bold mb-6">{page?.title}</h1>
 
-      {/* Sections */}
       <div className="space-y-10">
         {page?.sections?.map((section, index) => (
           <div key={index}>
