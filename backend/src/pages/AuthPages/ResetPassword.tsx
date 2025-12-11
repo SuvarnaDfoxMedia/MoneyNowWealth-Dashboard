@@ -53,7 +53,11 @@ export default function ResetPassword() {
 
     setLoading(true);
     try {
+<<<<<<< HEAD
       await axios.post(`http://localhost:5000/api/reset-password/${token}`, {
+=======
+      await axios.post(`http://localhost:5000/api/auth/reset-password/${token}`, {
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
         email,
         password,
       });

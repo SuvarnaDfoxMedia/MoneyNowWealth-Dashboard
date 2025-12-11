@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // import {
 //   ArrowDownIcon,
 //   ArrowUpIcon,
@@ -56,6 +57,8 @@
 
 
 import  { useEffect, useState } from "react";
+=======
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -65,6 +68,7 @@ import {
 import Badge from "../ui/badge/Badge";
 
 export default function EcommerceMetrics() {
+<<<<<<< HEAD
   const [totalUsers, setTotalUsers] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
@@ -91,6 +95,10 @@ export default function EcommerceMetrics() {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6">
       {/* Customers */}
+=======
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6">
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
       <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6">
         <div className="flex items-center justify-center w-12 h-12 bg-gray-100 rounded-xl dark:bg-gray-800">
           <GroupIcon className="text-gray-800 size-6 dark:text-white/90" />
@@ -101,12 +109,19 @@ export default function EcommerceMetrics() {
             <span className="text-sm text-gray-500 dark:text-gray-400">
               Customers
             </span>
+<<<<<<< HEAD
 
             <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
               {loading ? "Loading..." : totalUsers}
             </h4>
           </div>
 
+=======
+            <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
+              2,000
+            </h4>
+          </div>
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
           <Badge color="success">
             <ArrowUpIcon />
             11.01%
@@ -114,12 +129,18 @@ export default function EcommerceMetrics() {
         </div>
       </div>
 
+<<<<<<< HEAD
       {/* Orders (Static for now) */}
+=======
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
       <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6">
         <div className="flex items-center justify-center w-12 h-12 bg-gray-100 rounded-xl dark:bg-gray-800">
           <BoxIconLine className="text-gray-800 size-6 dark:text-white/90" />
         </div>
+<<<<<<< HEAD
 
+=======
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
         <div className="flex items-end justify-between mt-5">
           <div>
             <span className="text-sm text-gray-500 dark:text-gray-400">

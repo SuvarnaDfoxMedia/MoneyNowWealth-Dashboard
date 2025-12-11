@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 // import axios from "axios";
 
@@ -533,6 +534,19 @@ export interface User {
   profileImage?: string | null;
   phone?: string;
   address?: string;
+=======
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import axios from "axios";
+
+interface User {
+  id: string;
+  firstname?: string;
+  lastname?: string;
+  name?: string;
+  email?: string;
+  role?: string;
+  profileImage?: string | null;
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
 }
 
 interface AuthContextType {
@@ -544,6 +558,7 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+<<<<<<< HEAD
 const backendUrl = import.meta.env.VITE_API_BASE;
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -557,12 +572,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const res = await axios.get(`${backendUrl}/auth/profile`, { withCredentials: true });
       setUser(res.data.user || res.data);
     } catch {
+=======
+
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [user, setUser] = useState<User | null>(
+    localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")!) : null
+  );
+  const [loading, setLoading] = useState(true);
+
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+
+  const clearAuth = () => {
+    setUser(null);
+    localStorage.removeItem("user");
+  };
+
+  const refreshUser = async () => {
+    try {
+      const res = await axios.get(`${backendUrl}/api/profile`, { withCredentials: true });
+      setUser(res.data);
+      localStorage.setItem("user", JSON.stringify(res.data));
+    } catch (err) {
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
       clearAuth();
     }
   };
 
   const login = async (email: string, password: string) => {
     try {
+<<<<<<< HEAD
       const res = await axios.post(
         `${backendUrl}/auth/login`,
         { email, password },
@@ -570,6 +608,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       );
       if (!res.data.user) throw new Error("Invalid email or password");
       setUser(res.data.user);
+=======
+      // Backend sets httpOnly cookie
+      const res = await axios.post(
+        `${backendUrl}/api/auth/login`,
+        { email, password },
+        { withCredentials: true }
+      );
+
+      if (!res.data.user) throw new Error("Invalid email or password");
+
+      setUser(res.data.user);
+      localStorage.setItem("user", JSON.stringify(res.data.user));
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
     } catch (err: any) {
       clearAuth();
       const msg = err.response?.data?.message || "Invalid email or password";
@@ -579,12 +630,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = async () => {
     try {
+<<<<<<< HEAD
       await axios.post(`${backendUrl}/auth/logout`, {}, { withCredentials: true });
+=======
+      await axios.post(`${backendUrl}/api/auth/logout`, {}, { withCredentials: true });
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
     } catch (err) {
       console.error("Logout failed", err);
     } finally {
       clearAuth();
+<<<<<<< HEAD
       window.location.href = "/signin";
+=======
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
     }
   };
 
@@ -608,6 +666,7 @@ export const useAuth = () => {
   if (!context) throw new Error("useAuth must be used within AuthProvider");
   return context;
 };
+<<<<<<< HEAD
 
 // Optional helpers for axios interceptors
 export const refreshAuthUser = async () => {
@@ -624,3 +683,5 @@ export const logoutAuth = async () => {
     await axios.post(`${backendUrl}/auth/logout`, {}, { withCredentials: true });
   } catch {}
 };
+=======
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8

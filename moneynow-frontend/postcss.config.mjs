@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /** @type {import('tailwindcss').Config} */
 const config = {
   content: [
@@ -15,6 +16,9 @@ const config = {
       },
     },
   },
+=======
+const config = {
+>>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
   plugins: ["@tailwindcss/postcss"],
 };
 
