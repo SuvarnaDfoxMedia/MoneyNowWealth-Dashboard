@@ -39,75 +39,47 @@ const articleSchema = new Schema<IArticle>(
     seo_title: { type: String, trim: true },
     seo_description: { type: String, trim: true },
     focus_keyword: { type: String, trim: true },
-
     introduction: { type: String, default: "" },
-
     sections: [
       {
         title: { type: String, trim: true },
-        content: { type: String, default: "" }, // removed trim
-        images: [
-          { url: { type: String, trim: true }, caption: { type: String, trim: true } },
-        ],
-        videos: [
-          { url: { type: String, trim: true }, title: { type: String, trim: true } },
-        ],
+        content: { type: String, default: "" },
+        images: [{ url: { type: String, trim: true }, caption: { type: String, trim: true } }],
+        videos: [{ url: { type: String, trim: true }, title: { type: String, trim: true } }],
       },
     ],
-
-    faqs: [
-      {
-        question: { type: String, trim: true },
-        answer: { type: String, default: "" }, // removed trim
-      },
-    ],
-
+    faqs: [{ question: { type: String, trim: true }, answer: { type: String, default: "" } }],
     tools: [{ name: { type: String, trim: true }, url: { type: String, trim: true } }],
-
-    related_reads: [
-      { topic_code: { type: String, trim: true }, title: { type: String, trim: true } },
-    ],
-
-    status: {
-      type: String,
-      enum: ["draft", "published", "archived"],
-      default: "draft",
-    },
-
+    related_reads: [{ topic_code: { type: String, trim: true }, title: { type: String, trim: true } }],
+    status: { type: String, enum: ["draft", "published", "archived"], default: "draft" },
     read_time: { type: Number, default: 0 },
     author: { type: String, trim: true },
     is_active: { type: Number, default: 1 },
     is_deleted: { type: Boolean, default: false },
     deleted_at: { type: Date, default: null },
   },
-  {
-    versionKey: false,
-    timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
-  }
+  { versionKey: false, timestamps: { createdAt: "created_at", updatedAt: "updated_at" } }
 );
 
-articleSchema.pre<IArticle>("save", async function (next) {
+// Async pre-save hook (no next)
+articleSchema.pre<IArticle>("save", async function () {
   if (!this.article_code) {
     const lastArticle = await Article.findOne({ article_code: /^ART\d+$/ })
       .sort({ article_code: -1 })
       .select("article_code");
-
     let newCodeNumber = 1;
     if (lastArticle?.article_code) {
       const match = lastArticle.article_code.match(/\d+$/);
-      if (match) newCodeNumber = parseInt(match[0]) + 1;
+      if (match) newCodeNumber = parseInt(match[0], 10) + 1;
     }
     this.article_code = `ART${String(newCodeNumber).padStart(4, "0")}`;
   }
 
   if (this.introduction || this.sections?.length) {
-    const text = [this.introduction, ...(this.sections || []).map((s) => s.content || "")]
-      .join(" ");
+    const text = [this.introduction, ...(this.sections || []).map((s) => s.content || "")].join(" ");
     const words = text.trim().split(/\s+/).length;
     this.read_time = Math.max(1, Math.ceil(words / 200));
   }
-
-  next();
 });
 
 const Article: Model<IArticle> = mongoose.model<IArticle>("Article", articleSchema);

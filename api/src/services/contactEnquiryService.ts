@@ -1,61 +1,60 @@
-import { ContactEnquiry } from "../models/contactEnquiryModel.ts";
-import type { IContactEnquiry } from "../models/contactEnquiryModel.ts";
+import { ContactEnquiry } from "../models/contactEnquiryModel";
+import type { IContactEnquiry } from "../models/contactEnquiryModel";
+import type { SortOrder } from "mongoose";
+
+interface GetAllParams {
+filter?: Record<string, any>;
+skip?: number;
+limit?: number;
+sort?: Record<string, SortOrder>; // Use Mongoose's SortOrder type
+}
 
 export const contactEnquiryService = {
-  // Add a new enquiry
-  add: async (data: Partial<IContactEnquiry>) => {
-    const enquiry = new ContactEnquiry(data);
-    return enquiry.save();
-  },
+// ========================= ADD A NEW ENQUIRY =========================
+add: async (data: Partial<IContactEnquiry>) => {
+const enquiry = new ContactEnquiry(data);
+return enquiry.save();
+},
 
-  // Get all enquiries with search & pagination
-  getAll: async ({
-    search,
-    page = 1,
-    limit = 10,
-  }: {
-    search?: string;
-    page?: number;
-    limit?: number;
-  }) => {
-    const filter: any = { is_active: 1 };
+// ========================= GET ALL ENQUIRIES WITH PAGINATION =========================
+getAll: async ({
+filter = {},
+skip = 0,
+limit = 10,
+sort = { created_at: -1 } as Record<string, SortOrder>, // default sort
+}: GetAllParams) => {
+const defaultFilter = { is_active: 1, ...filter };
+const enquiries = await ContactEnquiry.find(defaultFilter)
+.sort(sort)
+.skip(skip)
+.limit(limit);
+const total = await ContactEnquiry.countDocuments(defaultFilter);
+return { enquiries, total };
+},
 
-    if (search?.trim()) {
-      const regex = new RegExp(search.trim(), "i");
-      filter.$or = [{ name: regex }, { email: regex }, { subject: regex }];
-    }
+// ========================= SOFT DELETE =========================
+softDelete: async (id: string) => {
+return ContactEnquiry.findByIdAndUpdate(
+id,
+{ is_active: 0, updated_at: new Date() },
+{ new: true }
+);
+},
 
-    const skip = (page - 1) * limit;
-    const enquiries = await ContactEnquiry.find(filter)
-      .sort({ created_at: -1 })
-      .skip(skip)
-      .limit(limit);
+// ========================= GET ENQUIRY BY ID =========================
+getById: async (id: string) => {
+return ContactEnquiry.findById(id);
+},
 
-    const total = await ContactEnquiry.countDocuments(filter);
-
-    return { enquiries, total };
-  },
-
-  // Soft delete an enquiry
-  softDelete: async (id: string) => {
-    return ContactEnquiry.findByIdAndUpdate(
-      id,
-      { is_active: 0, updated_at: new Date() },
-      { new: true }
-    );
-  },
-
-  // Get enquiry by ID
-  getById: async (id: string) => {
-    return ContactEnquiry.findById(id);
-  },
-
-  // Update enquiry status
-  updateStatus: async (id: string, status: "new" | "in-progress" | "resolved") => {
-    return ContactEnquiry.findByIdAndUpdate(
-      id,
-      { status, updated_at: new Date() },
-      { new: true }
-    );
-  },
+// ========================= UPDATE ENQUIRY STATUS =========================
+updateStatus: async (
+id: string,
+status: "new" | "in-progress" | "resolved"
+) => {
+return ContactEnquiry.findByIdAndUpdate(
+id,
+{ status, updated_at: new Date() },
+{ new: true }
+);
+},
 };

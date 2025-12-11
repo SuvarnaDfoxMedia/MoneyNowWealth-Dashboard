@@ -1,6 +1,9 @@
-
 // import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
-// import { useParams, useNavigate } from "react-router-dom";
+// import {
+//   useParams,
+//   useNavigate,
+//   useSearchParams,
+// } from "react-router-dom";
 // import {
 //   FiSave,
 //   FiRefreshCw,
@@ -13,6 +16,7 @@
 // import axiosApi from "../api/axios";
 // import DatePicker from "react-datepicker";
 // import "react-datepicker/dist/react-datepicker.css";
+// import { useDataTableStore } from "../store/dataTableStore"; // Import your Zustand store
 
 // interface TopicForm {
 //   cluster_id: string;
@@ -26,7 +30,7 @@
 //   tags?: string;
 //   is_active?: number;
 //   publish_date?: Date | null;
-//   access_type?: "free" | "premium"; //  renamed to match backend
+//   access_type?: "free" | "premium";
 // }
 
 // interface ClusterOption {
@@ -37,10 +41,16 @@
 // export default function AddTopic() {
 //   const { id } = useParams<{ id?: string }>();
 //   const navigate = useNavigate();
+//   const [searchParams] = useSearchParams();
+//   const page = searchParams.get("page") || "1";
+//   const limit = searchParams.get("limit") || "10";
+
 //   const { getOne, createRecord, updateRecord } = useCommonCrud({
 //     role: "admin",
 //     module: "topic",
 //   });
+
+//   const { setPage } = useDataTableStore(); // Zustand page setter
 
 //   const [values, setValues] = useState<TopicForm>({
 //     cluster_id: "",
@@ -54,7 +64,7 @@
 //     tags: "",
 //     is_active: 0,
 //     publish_date: null,
-//     access_type: "free", //  renamed and default corrected
+//     access_type: "free",
 //   });
 
 //   const [clusters, setClusters] = useState<ClusterOption[]>([]);
@@ -98,7 +108,7 @@
 //             publish_date: topic.publish_date
 //               ? new Date(topic.publish_date)
 //               : null,
-//             access_type: topic.access_type || "free", //  fetch correct field
+//             access_type: topic.access_type || "free",
 //           });
 //           if (topic.slug) setSlugEdited(true);
 //         } else {
@@ -114,7 +124,11 @@
 
 //   // Slug generation
 //   const generateSlug = (text: string) =>
-//     text.toLowerCase().trim().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-");
+//     text
+//       .toLowerCase()
+//       .trim()
+//       .replace(/[^\w\s-]/g, "")
+//       .replace(/\s+/g, "-");
 
 //   const handleInputChange = (
 //     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -136,24 +150,32 @@
 //     try {
 //       const payload = {
 //         ...values,
-//         publish_date: values.publish_date
-//           ? values.publish_date.toISOString()
-//           : null,
+//         title: values.title.trim(),
+//         slug: values.slug.trim(),
+//         author: values.author?.trim(),
+//         summary: values.summary?.trim(),
 //         keywords: values.keywords
 //           ? values.keywords.split(",").map((k) => k.trim())
 //           : [],
 //         tags: values.tags ? values.tags.split(",").map((t) => t.trim()) : [],
+//         publish_date: values.publish_date
+//           ? values.publish_date.toISOString()
+//           : null,
 //       };
 
 //       if (id) {
+//         // Update
 //         await updateRecord(id, payload);
 //         toast.success("Topic updated successfully");
+//         navigate(`/admin/topic?page=${page}&limit=${limit}`);
 //       } else {
+//         // Create new
 //         await createRecord(payload);
 //         toast.success("Topic created successfully");
+//         // Reset table to first page
+//         setPage(1);
+//         navigate(`/admin/topic?page=1&limit=${limit}`);
 //       }
-
-//       navigate("/admin/topic");
 //     } catch (error: any) {
 //       console.error("Error saving topic:", error);
 //       toast.error(error.response?.data?.message || "Failed to save topic");
@@ -174,7 +196,9 @@
 //           </h2>
 //           <button
 //             type="button"
-//             onClick={() => navigate("/admin/topic")}
+//             onClick={() =>
+//               navigate(`/admin/topic?page=${page}&limit=${limit}`)
+//             }
 //             className="bg-[#043f79] text-white px-3 py-1 rounded-md shadow-lg hover:scale-105 transition flex items-center gap-2"
 //           >
 //             <FiArrowLeft /> Back
@@ -232,12 +256,12 @@
 //             </div>
 //           </div>
 
-//           {/*  Access Type */}
+//           {/* Access Type */}
 //           <div>
 //             <label className="block mb-1 text-gray-700">Topic Type</label>
 //             <div className="relative">
 //               <select
-//                 name="access_type" //  correct field name
+//                 name="access_type"
 //                 value={values.access_type || "free"}
 //                 onChange={handleInputChange}
 //                 className={`${inputClass} pr-10 appearance-none`}
@@ -378,7 +402,7 @@
 //                   tags: "",
 //                   is_active: 0,
 //                   publish_date: null,
-//                   access_type: "free", //  reset correct field
+//                   access_type: "free",
 //                 });
 //                 setSlugEdited(false);
 //               }}
@@ -402,6 +426,8 @@
 // }
 
 
+
+
 import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import {
   useParams,
@@ -409,8 +435,6 @@ import {
   useSearchParams,
 } from "react-router-dom";
 import {
-  FiSave,
-  FiRefreshCw,
   FiArrowLeft,
   FiChevronDown,
   FiCalendar,
@@ -420,6 +444,7 @@ import { useCommonCrud } from "../hooks/useCommonCrud";
 import axiosApi from "../api/axios";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { useDataTableStore } from "../store/dataTableStore";
 
 interface TopicForm {
   cluster_id: string;
@@ -441,17 +466,24 @@ interface ClusterOption {
   title: string;
 }
 
+interface GetOneResponse {
+  success: boolean;
+  topic?: any;
+}
+
 export default function AddTopic() {
   const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const page = searchParams.get("page") || 1;
-  const limit = searchParams.get("limit") || 10;
+  const page = searchParams.get("page") || "1";
+  const limit = searchParams.get("limit") || "10";
 
   const { getOne, createRecord, updateRecord } = useCommonCrud({
     role: "admin",
     module: "topic",
   });
+
+  const { setPage } = useDataTableStore();
 
   const [values, setValues] = useState<TopicForm>({
     cluster_id: "",
@@ -485,13 +517,17 @@ export default function AddTopic() {
     fetchClusters();
   }, []);
 
-  // Fetch topic if editing
+  // Fetch topic for edit
   useEffect(() => {
     if (!id) return;
+
     const fetchTopic = async () => {
       try {
-        const { success, topic } = await getOne(id);
-        if (success && topic) {
+        const response = (await getOne(id)) as GetOneResponse;
+
+        if (response.success && response.topic) {
+          const topic = response.topic;
+
           setValues({
             cluster_id:
               typeof topic.cluster_id === "object"
@@ -511,6 +547,7 @@ export default function AddTopic() {
               : null,
             access_type: topic.access_type || "free",
           });
+
           if (topic.slug) setSlugEdited(true);
         } else {
           toast.error("Topic not found");
@@ -520,26 +557,49 @@ export default function AddTopic() {
         toast.error("Failed to fetch topic details");
       }
     };
+
     fetchTopic();
   }, [id]);
 
-  // Slug generation
+  // Slug generator
   const generateSlug = (text: string) =>
-    text.toLowerCase().trim().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-");
+    text
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, "")
+      .replace(/\s+/g, "-");
 
   const handleInputChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
+
     setValues((prev) => {
       const updated = { ...prev, [name]: value };
-      if (name === "title" && !slugEdited) updated.slug = generateSlug(value);
+      if (name === "title" && !slugEdited) {
+        updated.slug = generateSlug(value);
+      }
       return updated;
     });
+
     if (name === "slug") setSlugEdited(true);
   };
 
-  // Submit form
+  // Convert payload to FormData
+  const buildFormData = (payload: any) => {
+    const formData = new FormData();
+    Object.keys(payload).forEach((key) => {
+      const value = payload[key];
+      if (Array.isArray(value)) {
+        value.forEach((v: string) => formData.append(`${key}[]`, v));
+      } else {
+        formData.append(key, value ?? "");
+      }
+    });
+    return formData;
+  };
+
+  // Submit
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -547,24 +607,31 @@ export default function AddTopic() {
     try {
       const payload = {
         ...values,
-        publish_date: values.publish_date
-          ? values.publish_date.toISOString()
-          : null,
+        title: values.title.trim(),
+        slug: values.slug.trim(),
+        author: values.author?.trim(),
+        summary: values.summary?.trim(),
         keywords: values.keywords
           ? values.keywords.split(",").map((k) => k.trim())
           : [],
         tags: values.tags ? values.tags.split(",").map((t) => t.trim()) : [],
+        publish_date: values.publish_date
+          ? values.publish_date.toISOString()
+          : "",
       };
 
-      if (id) {
-        await updateRecord(id, payload);
-        toast.success("Topic updated successfully");
-      } else {
-        await createRecord(payload);
-        toast.success("Topic created successfully");
-      }
+      const formData = buildFormData(payload);
 
-      navigate(`/admin/topic?page=${page}&limit=${limit}`);
+      if (id) {
+        await updateRecord(id, formData);
+        toast.success("Topic updated successfully");
+        navigate(`/admin/topic?page=${page}&limit=${limit}`);
+      } else {
+        await createRecord(formData);
+        toast.success("Topic created successfully");
+        setPage(1);
+        navigate(`/admin/topic?page=1&limit=${limit}`);
+      }
     } catch (error: any) {
       console.error("Error saving topic:", error);
       toast.error(error.response?.data?.message || "Failed to save topic");
@@ -585,7 +652,9 @@ export default function AddTopic() {
           </h2>
           <button
             type="button"
-            onClick={() => navigate(`/admin/topic?page=${page}&limit=${limit}`)}
+            onClick={() =>
+              navigate(`/admin/topic?page=${page}&limit=${limit}`)
+            }
             className="bg-[#043f79] text-white px-3 py-1 rounded-md shadow-lg hover:scale-105 transition flex items-center gap-2"
           >
             <FiArrowLeft /> Back
@@ -593,7 +662,7 @@ export default function AddTopic() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Cluster Select */}
+          {/* Cluster */}
           <div>
             <label className="block mb-1 text-gray-700">Cluster</label>
             <div className="relative">
@@ -617,7 +686,7 @@ export default function AddTopic() {
             </div>
           </div>
 
-          {/* Title & Slug */}
+          {/* Title + Slug */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block mb-1 text-gray-700">Title</label>
@@ -625,7 +694,6 @@ export default function AddTopic() {
                 name="title"
                 value={values.title}
                 onChange={handleInputChange}
-                placeholder="Enter title"
                 className={inputClass}
                 required
               />
@@ -636,20 +704,19 @@ export default function AddTopic() {
                 name="slug"
                 value={values.slug}
                 onChange={handleInputChange}
-                placeholder="Enter slug"
                 className={inputClass}
                 required
               />
             </div>
           </div>
 
-          {/* Access Type */}
+          {/* Type */}
           <div>
             <label className="block mb-1 text-gray-700">Topic Type</label>
             <div className="relative">
               <select
                 name="access_type"
-                value={values.access_type || "free"}
+                value={values.access_type}
                 onChange={handleInputChange}
                 className={`${inputClass} pr-10 appearance-none`}
               >
@@ -669,7 +736,6 @@ export default function AddTopic() {
               name="summary"
               value={values.summary}
               onChange={handleInputChange}
-              placeholder="Enter summary"
               className={inputClass}
               rows={3}
             />
@@ -683,7 +749,6 @@ export default function AddTopic() {
                 name="keywords"
                 value={values.keywords}
                 onChange={handleInputChange}
-                placeholder="Comma separated keywords"
                 className={inputClass}
               />
             </div>
@@ -693,7 +758,6 @@ export default function AddTopic() {
                 name="tags"
                 value={values.tags}
                 onChange={handleInputChange}
-                placeholder="Comma separated tags"
                 className={inputClass}
               />
             </div>
@@ -707,7 +771,6 @@ export default function AddTopic() {
                 name="author"
                 value={values.author}
                 onChange={handleInputChange}
-                placeholder="Enter author name"
                 className={inputClass}
               />
             </div>
@@ -752,7 +815,6 @@ export default function AddTopic() {
               </div>
             </div>
 
-            {/* Publish Date */}
             <div>
               <label className="block mb-1 text-gray-700">Publish Date</label>
               <div className="relative">
@@ -793,17 +855,17 @@ export default function AddTopic() {
                 });
                 setSlugEdited(false);
               }}
-              className="bg-gray-200 text-gray-700 px-3 py-2 rounded-md hover:bg-gray-300 transition flex items-center gap-2"
+              className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300"
             >
-              <FiRefreshCw /> Reset
+              Reset
             </button>
 
             <button
               type="submit"
               disabled={isSubmitting}
-              className="bg-[#043f79] text-white px-4 py-2 rounded-md shadow-lg hover:scale-105 transition flex items-center gap-2"
+              className="bg-indigo-600 text-white px-5 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
             >
-              <FiSave /> {isSubmitting ? "Saving..." : id ? "Update" : "Save"}
+              {isSubmitting ? "Saving..." : "Save Topic"}
             </button>
           </div>
         </form>

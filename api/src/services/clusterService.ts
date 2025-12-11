@@ -1,45 +1,53 @@
-import Cluster, { type ICluster } from "../models/clusterModel.ts";
+import Cluster, { type ICluster } from "../models/clusterModel";
 
 /* ---------------------------------------------------
-   GET: All Clusters
+   Get paginated clusters with optional filters
 --------------------------------------------------- */
 export const getClusters = async (query: any) => {
-  const { status, includeDeleted, page, limit, search } = query;
+  const { search, status, includeDeleted, page, limit, sort } = query;
 
-  const filter: Record<string, any> = { is_deleted: false };
+  const filter: any = {};
 
-  if (status) filter.is_active = Number(status);
-  if (includeDeleted === "true") delete filter.is_deleted;
+  // Dynamic filters
+  if (status) filter.status = status;
+  if (!includeDeleted || includeDeleted === "false") filter.is_deleted = false;
 
   if (search) {
+    const s = String(search).trim();
     filter.$or = [
-      { title: { $regex: search, $options: "i" } },
-      { cluster_code: { $regex: search, $options: "i" } },
+      { title: { $regex: s, $options: "i" } },
+      { description: { $regex: s, $options: "i" } },
+      { cluster_code: { $regex: s, $options: "i" } },
     ];
   }
 
-  const pageNum = parseInt(page as string) || 1;
-  const perPage = parseInt(limit as string) || 10;
+  const pageNum = Math.max(Number(page) || 1, 1);
+  const perPage = Math.max(Number(limit) || 10, 1);
   const skip = (pageNum - 1) * perPage;
+
+  // Dynamic sorting
+  const finalSort = sort || { created_at: -1 };
 
   const [clusters, total] = await Promise.all([
     Cluster.find(filter)
-      .sort({ sort_order: 1, created_at: -1 })
+      .sort(finalSort)
       .skip(skip)
       .limit(perPage),
     Cluster.countDocuments(filter),
   ]);
 
   return {
+    success: true,
     clusters,
     total,
     currentPage: pageNum,
+    limit: perPage,
     totalPages: Math.ceil(total / perPage),
   };
 };
 
 /* ---------------------------------------------------
-   GET: Cluster by ID
+   Get single cluster by ID
 --------------------------------------------------- */
 export const getClusterById = async (id: string) => {
   const cluster = await Cluster.findOne({ _id: id, is_deleted: false });
@@ -48,26 +56,18 @@ export const getClusterById = async (id: string) => {
 };
 
 /* ---------------------------------------------------
-   POST: Create Cluster
+   Create new cluster
 --------------------------------------------------- */
 export const createCluster = async (data: Partial<ICluster>) => {
   let cluster_code = data.cluster_code;
 
   if (!cluster_code) {
-    const lastCluster = await Cluster.findOne()
-      .sort({ created_at: -1 })
-      .select("cluster_code");
-    const lastCodeNum = lastCluster
-      ? parseInt(lastCluster.cluster_code?.replace("CL-", "") || "0", 10)
-      : 0;
-    cluster_code = `CL-${String(lastCodeNum + 1).padStart(4, "0")}`;
+    const lastCluster = await Cluster.findOne().sort({ created_at: -1 }).select("cluster_code");
+    const lastCodeNum = lastCluster ? parseInt(lastCluster.cluster_code?.replace("CL", "") || "0", 10) : 0;
+    cluster_code = `CL${String(lastCodeNum + 1).padStart(4, "0")}`;
   }
 
-  // ✅ thumbnail filename properly extracted
-  const thumbnailName =
-    typeof data.thumbnail === "string"
-      ? data.thumbnail
-      : (data as any)?.file?.filename || "";
+  const thumbnailName = typeof data.thumbnail === "string" ? data.thumbnail : (data as any)?.file?.filename || "";
 
   const cluster = new Cluster({
     ...data,
@@ -82,13 +82,12 @@ export const createCluster = async (data: Partial<ICluster>) => {
 };
 
 /* ---------------------------------------------------
-   PUT: Update Cluster
+   Update existing cluster
 --------------------------------------------------- */
 export const updateCluster = async (id: string, data: Partial<ICluster>) => {
   const updateData: any = { ...data };
 
-  // ✅ if new file uploaded, update thumbnail name
-  if ((data as any).file) {
+  if ((data as any)?.file) {
     updateData.thumbnail = (data as any).file.filename;
   }
 
@@ -98,7 +97,7 @@ export const updateCluster = async (id: string, data: Partial<ICluster>) => {
 };
 
 /* ---------------------------------------------------
-   PATCH: Toggle Active / Inactive
+   Toggle cluster active/inactive
 --------------------------------------------------- */
 export const toggleClusterStatus = async (id: string) => {
   const cluster = await Cluster.findById(id);
@@ -110,7 +109,7 @@ export const toggleClusterStatus = async (id: string) => {
 };
 
 /* ---------------------------------------------------
-   DELETE: Soft Delete Cluster
+   Soft delete cluster
 --------------------------------------------------- */
 export const deleteCluster = async (id: string) => {
   const cluster = await Cluster.findById(id);

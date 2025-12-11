@@ -1,38 +1,67 @@
-import CmsPage, { type ICmsPage } from "../models/cmsPageModel.ts";
+import CmsPage, { type ICmsPage } from "../models/cmsPageModel";
 
+// ===============================
+// 🔥 Dynamic Server-Side Pagination Service
+// ===============================
 export const getPages = async (query: any) => {
-  const { slug, page_code, status, includeInactive, page, limit, search } = query;
+  const {
+    page = 1,
+    limit = 10,
+    search = "",
+    sortField = "title",
+    sortOrder = "asc",
+    includeInactive = false,
+  } = query;
 
-  const filter: Record<string, any> = {};
-
-  if (slug) filter.slug = slug;
-  if (page_code) filter.page_code = page_code;
-  if (status) filter.status = status;
-  if (includeInactive !== "true") filter.is_active = 1;
-  if (search) filter.title = { $regex: search, $options: "i" };
-
-  const pageNum = parseInt(page as string) || 1;
-  const perPage = parseInt(limit as string) || 10;
+  const pageNum = Math.max(Number(page) || 1, 1);
+  const perPage = Math.max(Number(limit) || 10, 1);
   const skip = (pageNum - 1) * perPage;
 
+  const filter: Record<string, any> = { is_deleted: { $ne: true } };
+
+  if (!includeInactive) {
+    filter.is_active = 1;
+  }
+
+  if (search && search.trim() !== "") {
+    filter.title = { $regex: search, $options: "i" };
+  }
+
+  const sortQuery: Record<string, any> = {};
+  sortQuery[sortField] = sortOrder === "desc" ? -1 : 1;
+
   const [pages, total] = await Promise.all([
-    CmsPage.find(filter).sort({ created_at: -1 }).skip(skip).limit(perPage),
+    CmsPage.find(filter)
+      .sort(sortQuery)
+      .skip(skip)
+      .limit(perPage),
     CmsPage.countDocuments(filter),
   ]);
 
-  return { pages, total, currentPage: pageNum, totalPages: Math.ceil(total / perPage) };
+  return {
+    pages,
+    total,
+    currentPage: pageNum,
+    totalPages: Math.ceil(total / perPage),
+  };
 };
 
+// ===============================
+// 🔥 Get Page by ID
+// ===============================
 export const getPageById = async (id: string) => {
   const page = await CmsPage.findById(id);
   if (!page || page.is_active === 0) throw new Error("Page not found");
   return page;
 };
 
+// ===============================
+// 🔥 Create Page
+// ===============================
 export const createPage = async (data: Partial<ICmsPage>) => {
   if (!data.title || !data.slug) throw new Error("title and slug are required");
 
-  const slugExists = await CmsPage.findOne({ slug: data.slug });
+  const slugExists = await CmsPage.findOne({ slug: data.slug, is_deleted: { $ne: true } });
   if (slugExists) throw new Error("Slug already exists");
 
   const page = new CmsPage({
@@ -47,6 +76,9 @@ export const createPage = async (data: Partial<ICmsPage>) => {
   return page;
 };
 
+// ===============================
+// 🔥 Update Page
+// ===============================
 export const updatePage = async (id: string, data: Partial<ICmsPage>) => {
   const page = await CmsPage.findById(id);
   if (!page || page.is_active === 0) throw new Error("Page not found");
@@ -56,6 +88,9 @@ export const updatePage = async (id: string, data: Partial<ICmsPage>) => {
   return page;
 };
 
+// ===============================
+// 🔥 Toggle Active / Inactive
+// ===============================
 export const togglePageStatus = async (id: string) => {
   const page = await CmsPage.findById(id);
   if (!page) throw new Error("Page not found");
@@ -65,6 +100,9 @@ export const togglePageStatus = async (id: string) => {
   return page;
 };
 
+// ===============================
+// 🔥 Soft Delete Page
+// ===============================
 export const deletePage = async (id: string) => {
   const page = await CmsPage.findById(id);
   if (!page) throw new Error("Page not found");
@@ -72,6 +110,7 @@ export const deletePage = async (id: string) => {
   page.is_deleted = true;
   page.is_active = 0;
   page.deleted_at = new Date();
+
   await page.save();
   return page;
 };
