@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 // import React from "react";
-=======
-import React from "react";
->>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider, useAuth } from "./context/AuthContext";
@@ -18,7 +14,6 @@ import ResetPassword from "./pages/AuthPages/ResetPassword";
 
 import Home from "./pages/Dashboard/Home";
 import UserDashBoard from "./pages/userPages/UserDashboard";
-<<<<<<< HEAD
 // import BlogList from "./pages/Blogs/BlogList";
 
 
@@ -27,15 +22,6 @@ import ContactEnquiryListing from "./components/tables/ListingComponents/Contact
 import CmsPageListing from "./components/tables/ListingComponents/CmsPageListing";
 import TopicListing from "./components/tables/ListingComponents/TopicListing";
 
-=======
-import BlogList from "./pages/Blogs/BlogList";
-import AddBlogs from "./components/AddBlogs";
-
-import NewsletterLisging from "./components/tables/BasicTables/NewsletterLisging";
-import AddNewsletter from "./components/AddNewsletter";
-import ContactEnquiryListing from "./components/tables/BasicTables/ContactEnquiryListing";
-import AddContactEnquiry from "./components/AddContactEnquiry";
->>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
 import ChangePasswordForm from "./components/header/ChangePasswordForm";
 
 import Calendar from "./pages/Calendar";
@@ -55,7 +41,6 @@ import BarChart from "./pages/Charts/BarChart";
 
 import NotFound from "./pages/OtherPage/NotFound";
 import UserProfiles from "./pages/UserProfiles";
-<<<<<<< HEAD
 
 import AddCmsPage from "./components/AddCmsPage";
 import ClusterListing from "./components/tables/ListingComponents/ClusterListing";
@@ -71,11 +56,6 @@ import UserSubscriptionListing from "./components/tables/ListingComponents/UserS
 import InvoicePage from "./components/InvoicePage";
 import CustomerListing from "./components/tables/ListingComponents/CustomerListing";
 import CustomerHistory from "./components/CustomerHistory";
-=======
-import PreviewBlog from "./components/PreviewBlog";
-import BlogCategoryListing from "./components/tables/BasicTables/BlogCategoryListing";
-import AddBlogCategory from "./components/AddBlogCategory";
->>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
 
 export default function App() {
   return (
@@ -123,7 +103,6 @@ function AppRoutes() {
   {/* Admin & Editor Routes */}
   <Route element={<PrivateRoute roles={["admin", "editor"]}><AppLayout /></PrivateRoute>}>
     <Route path="/:role/dashboard" element={<Home />} />
-<<<<<<< HEAD
 
     <Route path="/customers" element={<CustomerListing/>} />
 
@@ -162,31 +141,11 @@ function AppRoutes() {
 
     
 
-=======
-    <Route path="/:role/blogcategories" element={<BlogCategoryListing/>} />
-    <Route path="/:role/blogcategories/create" element={<AddBlogCategory/>} />
-    <Route path="/:role/blogcategories/edit/:id" element={<AddBlogCategory />} />
-
-
-    <Route path="/:role/blogs" element={<BlogList />} />
-    <Route path="/:role/blogs/create" element={<AddBlogs />} />
-    <Route path="/:role/blog/edit/:id" element={<AddBlogs />} />
-    <Route path="/:role/blogs/preview/:id" element={<PreviewBlog />} />
-    <Route path="/:role/profile" element={<UserProfiles />} />  
-    <Route path="/:role/change-password" element={<ChangePasswordForm />} />
-
->>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
     {/* Admin-only routes */}
     {role === "admin" && (
       <>
         <Route path="/:role/newsletter" element={<NewsletterLisging />} />
-<<<<<<< HEAD
         <Route path="/:role/contactenquiry" element={<ContactEnquiryListing />} />
-=======
-        <Route path="/:role/addnewsletter" element={<AddNewsletter />} />
-        <Route path="/:role/contactenquiry" element={<ContactEnquiryListing />} />
-        <Route path="/:role/addcontactenquiry" element={<AddContactEnquiry/>} />
->>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
 
         <Route path="/form-elements" element={<FormElements />} />
         <Route path="/basic-tables" element={<BasicTables />} />

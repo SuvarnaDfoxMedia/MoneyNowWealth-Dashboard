@@ -779,9 +779,20 @@ span.flatpickr-weekday,
 
 
 
-<<<<<<< HEAD
 .menu-dropdown-item {
   padding-block: calc(var(--spacing) * 1);
 }
-=======
->>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
+
+
+.jodit-wysiwyg {
+  margin-bottom: 0 !important;
+}
+
+.jodit-container {
+  margin-bottom: 0 !important;
+}
+
+.jodit-workplace {
+  margin: 0 !important;
+  padding: 0 !important;
+}

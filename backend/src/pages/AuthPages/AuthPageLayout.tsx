@@ -1,10 +1,5 @@
 import React from "react";
-<<<<<<< HEAD
 
-=======
-import GridShape from "../../components/common/GridShape";
-import { Link } from "react-router";
->>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
 import ThemeTogglerTwo from "../../components/common/ThemeTogglerTwo";
 
 export default function AuthLayout({

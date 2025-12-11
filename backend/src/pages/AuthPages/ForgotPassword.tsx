@@ -25,11 +25,7 @@ export default function ForgotPassword() {
     if (!validate()) return;
 
     try {
-<<<<<<< HEAD
       await axios.post("http://localhost:5000/api/forgot-password", { email });
-=======
-      await axios.post("http://localhost:5000/api/auth/forgot-password", { email });
->>>>>>> 9366e7e235c66c680354e16c22955b374b60a0c8
       toast.success("Password reset link sent to your email.");
       setEmail("");
 
