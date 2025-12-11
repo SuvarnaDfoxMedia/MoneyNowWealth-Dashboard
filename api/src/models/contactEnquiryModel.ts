@@ -1,5 +1,8 @@
 import mongoose, { Document, Schema, Model } from "mongoose";
 
+// -------------------------
+// Interface
+// -------------------------
 export interface IContactEnquiry extends Document {
   name: string;
   email: string;
@@ -12,30 +15,46 @@ export interface IContactEnquiry extends Document {
   updated_at: Date;
 }
 
+// -------------------------
+// Schema
+// -------------------------
 const contactEnquirySchema = new Schema<IContactEnquiry>(
   {
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, trim: true },
     mobile: { type: String, required: true, trim: true },
-    subject: { type: String, enum: ["Support", "Partner", "Feedback", "Others"], required: true },
+    subject: {
+      type: String,
+      enum: ["Support", "Partner", "Feedback", "Others"],
+      required: true,
+    },
     message: { type: String, required: true },
-    status: { type: String, enum: ["new", "in-progress", "resolved"], default: "new" },
+    status: {
+      type: String,
+      enum: ["new", "in-progress", "resolved"],
+      default: "new",
+    },
     is_active: { type: Number, default: 1 },
     created_at: { type: Date, default: Date.now },
     updated_at: { type: Date, default: Date.now },
   },
-  { versionKey: false }
+  {
+    versionKey: false,
+  }
 );
 
-contactEnquirySchema.pre("save", function (next) {
+// -------------------------
+// Pre-save Hook
+// -------------------------
+contactEnquirySchema.pre<IContactEnquiry>("save", function (next: (err?: any) => void) {
   this.updated_at = new Date();
   next();
 });
 
+// -------------------------
+// Model
+// -------------------------
 export const ContactEnquiry: Model<IContactEnquiry> = mongoose.model<IContactEnquiry>(
   "ContactEnquiry",
   contactEnquirySchema
 );
-
-// ✅ Export interface explicitly
-export type { IContactEnquiry };

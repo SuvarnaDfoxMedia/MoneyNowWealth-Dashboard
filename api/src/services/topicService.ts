@@ -1,20 +1,31 @@
+import mongoose, { Types, SortOrder } from "mongoose";
+import Topic, { ITopic } from "../models/topicModel";
+import Article from "../models/articleModel";
+import Cluster from "../models/clusterModel";
 
+/* ----------------------------------------------
+   SERVICE INTERFACE
+---------------------------------------------- */
+interface PaginationResult<T> {
+  topics: T[];
+  total: number;
+}
 
-
-import mongoose from "mongoose";
-import Topic from "../models/topicModel.ts";
-import Article from "../models/articleModel.ts";
-import Cluster from "../models/clusterModel.ts";
-
+/* ----------------------------------------------
+   TOPIC SERVICE
+---------------------------------------------- */
 export const topicService = {
-  // ---------------- PUBLIC ----------------
+  /* ----------------------------------------------
+      PUBLIC — Get all clusters → topics → articles
+  ---------------------------------------------- */
   getPublishedClustersTopicsArticles: async () => {
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // Compare date only
+    today.setHours(0, 0, 0, 0);
 
     const clusters = await Cluster.aggregate([
       { $match: { status: "published" } },
       { $sort: { sort_order: 1 } },
+
       {
         $lookup: {
           from: "topics",
@@ -34,6 +45,7 @@ export const topicService = {
               },
             },
             { $sort: { publish_date: -1, created_at: -1 } },
+
             {
               $lookup: {
                 from: "articles",
@@ -60,6 +72,7 @@ export const topicService = {
           as: "topics",
         },
       },
+
       {
         $project: {
           _id: 1,
@@ -76,6 +89,9 @@ export const topicService = {
     return clusters;
   },
 
+  /* ----------------------------------------------
+      PUBLIC — Get single topic + its articles
+  ---------------------------------------------- */
   getPublishedTopicWithArticlesById: async (topicId: string) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -83,13 +99,14 @@ export const topicService = {
     const result = await Topic.aggregate([
       {
         $match: {
-          _id: new mongoose.Types.ObjectId(topicId),
+          _id: new Types.ObjectId(topicId),
           is_deleted: false,
           status: "published",
           publish_date: { $lte: today },
           access_type: "free",
         },
       },
+
       {
         $lookup: {
           from: "clusters",
@@ -98,68 +115,34 @@ export const topicService = {
           as: "cluster",
         },
       },
+
       { $unwind: "$cluster" },
       { $match: { "cluster.status": "published" } },
+
       {
         $lookup: {
           from: "articles",
-          let: { topicId: "$_id" },
+          let: { clusterId: "$cluster_id" },
           pipeline: [
-            // {
-            //   $match: {
-            //     $expr: {
-            //       $and: [
-            //         { $eq: ["$topic_id", "$$topicId"] },
-            //         { $eq: ["$is_deleted", false] },
-            //         { $eq: ["$status", "published"] },
-            //         { $lte: ["$publish_date", today] },
-            //       ],
-            //     },
-            //   },
-            // },
-
             {
-  $match: {
-    $expr: {
-      $and: [
-        { $eq: ["$cluster_id", "$$clusterId"] },
-        { $eq: ["$is_deleted", false] },
-        { $eq: ["$status", "published"] },
-        { $lte: ["$publish_date", today] },
-        { $in: ["$access_type", ["free", "premium"]] },
-      ],
-    },
-  },
-},
-
-//          {
-//   $match: {
-//     $expr: {
-//       $and: [
-//         { $eq: ["$cluster_id", "$$clusterId"] },
-//         { $eq: ["$is_deleted", false] },
-//         { $eq: ["$status", "published"] },
-//         { $lte: ["$publish_date", today] },
-//         {
-//           $or: [
-//             { $eq: ["$access_type", "free"] },
-//             {
-//               $and: [
-//                 { $eq: ["$access_type", "premium"] },
-//                 { $eq: ["$$userHasActiveSubscription", true] }   // Base on the Subscription
-//               ]
-//             }
-//           ]
-//         }
-//       ]
-//     }
-//   }
-// },     
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$cluster_id", "$$clusterId"] },
+                    { $eq: ["$is_deleted", false] },
+                    { $eq: ["$status", "published"] },
+                    { $lte: ["$publish_date", today] },
+                    { $in: ["$access_type", ["free", "premium"]] },
+                  ],
+                },
+              },
+            },
             { $sort: { publish_date: -1, created_at: -1 } },
           ],
           as: "articles",
         },
       },
+
       {
         $project: {
           _id: 1,
@@ -189,66 +172,95 @@ export const topicService = {
     return result?.[0] || null;
   },
 
-  // ---------------- ADMIN ----------------
-  getAll: async (filter: Record<string, any>, page = 1, limit = 10) => {
-    const skip = (page - 1) * limit;
+  /* ----------------------------------------------
+      ADMIN — Get all topics with pagination
+  ---------------------------------------------- */
+  getAll: async (
+    filter: Record<string, any>,
+    page = 1,
+    limit = 10
+  ): Promise<PaginationResult<ITopic>> => {
+    try {
+      const sortQuery: Record<string, SortOrder> = {
+        created_at: -1,
+        _id: -1,
+      };
 
-    const [topics, total] = await Promise.all([
-      Topic.find(filter)
-        .populate("cluster_id", "cluster_code title")
-        .sort({ publish_date: -1, created_at: -1 })
-        .skip(skip)
-        .limit(limit),
-      Topic.countDocuments(filter),
-    ]);
+      const skip = (page - 1) * limit;
 
-    return { topics, total };
+      const [topics, total] = await Promise.all([
+        Topic.find(filter)
+          .populate("cluster_id", "cluster_code title")
+          .sort(sortQuery)
+          .skip(skip)
+          .limit(limit),
+        Topic.countDocuments(filter),
+      ]);
+
+      return { topics, total };
+    } catch (err) {
+      console.error("TopicService getAll Error:", err);
+      throw err;
+    }
   },
 
+  /* ----------------------------------------------
+      ADMIN — Get topic by ID
+  ---------------------------------------------- */
   getById: async (id: string) => {
-    return await Topic.findOne({ _id: id, is_deleted: false }).populate(
+    return Topic.findOne({ _id: id, is_deleted: false }).populate(
       "cluster_id",
       "cluster_code title"
     );
   },
 
+  /* ----------------------------------------------
+      ADMIN — Create topic
+  ---------------------------------------------- */
   create: async (data: any) => {
     const now = new Date();
-    data.access_type = data.access_type || "free";
 
-    // Do NOT auto-set is_active
+    data.access_type = data.access_type || "free";
     data.status = ["draft", "published", "archived"].includes(data.status)
       ? data.status
       : "draft";
+
     data.is_active = typeof data.is_active === "number" ? data.is_active : 0;
 
     data.created_at = now;
     data.updated_at = now;
 
     const topic = new Topic(data);
-    return await topic.save();
+    return topic.save();
   },
 
+  /* ----------------------------------------------
+      ADMIN — Update topic
+  ---------------------------------------------- */
   update: async (id: string, updateData: any) => {
     const now = new Date();
 
-    // Do NOT auto-update is_active
     if (updateData.status) {
       updateData.status = ["draft", "published", "archived"].includes(updateData.status)
         ? updateData.status
         : "draft";
     }
 
-    if (updateData.is_active !== undefined && typeof updateData.is_active !== "number") {
+    if (
+      updateData.is_active !== undefined &&
+      typeof updateData.is_active !== "number"
+    ) {
       updateData.is_active = 0;
     }
 
     updateData.updated_at = now;
 
-    return await Topic.findByIdAndUpdate(id, updateData, { new: true });
+    return Topic.findByIdAndUpdate(id, updateData, { new: true });
   },
 
-  // Toggle is_active manually
+  /* ----------------------------------------------
+      ADMIN — Toggle active/inactive
+  ---------------------------------------------- */
   toggleStatus: async (id: string) => {
     const topic = await Topic.findById(id);
     if (!topic) return null;
@@ -256,9 +268,12 @@ export const topicService = {
     topic.is_active = topic.is_active === 1 ? 0 : 1;
     topic.updated_at = new Date();
 
-    return await topic.save();
+    return topic.save();
   },
 
+  /* ----------------------------------------------
+      ADMIN — Soft delete
+  ---------------------------------------------- */
   softDelete: async (id: string) => {
     const topic = await Topic.findById(id);
     if (!topic) return null;
@@ -268,9 +283,12 @@ export const topicService = {
     topic.deleted_at = new Date();
     topic.updated_at = new Date();
 
-    return await topic.save();
+    return topic.save();
   },
 
+  /* ----------------------------------------------
+      ADMIN — Restore deleted topic
+  ---------------------------------------------- */
   restore: async (id: string) => {
     const topic = await Topic.findById(id);
     if (!topic) return null;
@@ -279,6 +297,6 @@ export const topicService = {
     topic.deleted_at = undefined;
     topic.updated_at = new Date();
 
-    return await topic.save();
+    return topic.save();
   },
 };

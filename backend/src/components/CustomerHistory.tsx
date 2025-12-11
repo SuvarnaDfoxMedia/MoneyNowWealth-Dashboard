@@ -1,5 +1,5 @@
 // src/pages/CustomerHistory.tsx
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { FiArrowLeft } from "react-icons/fi";
 import axios from "../api/axios";

@@ -1,9 +1,8 @@
-
 import express from "express";
 import mongoose from "mongoose";
-import { topicService } from "../services/topicService.ts";
-import Topic from "../models/topicModel.ts";
-import Cluster from "../models/clusterModel.ts";
+import { topicService } from "../services/topicService";
+import Topic from "../models/topicModel";
+import Cluster from "../models/clusterModel";
 
 type Request = express.Request;
 type Response = express.Response;
@@ -24,58 +23,19 @@ export const getPublishedClustersTopicsArticles = async (req: Request, res: Resp
           from: "topics",
           let: { clusterId: "$_id" },
           pipeline: [
-            // {
-            //   $match: {
-            //     $expr: {
-            //       $and: [
-            //         { $eq: ["$cluster_id", "$$clusterId"] },
-            //         { $eq: ["$is_deleted", false] },
-            //         { $eq: ["$status", "published"] },
-            //         { $lte: ["$publish_date", today] },
-            //         { $eq: ["$access_type", "free"] },
-            //       ],
-            //     },
-            //   },
-            // },     // Only Prmium Plan
-
             {
-  $match: {
-    $expr: {
-      $and: [
-        { $eq: ["$cluster_id", "$$clusterId"] },
-        { $eq: ["$is_deleted", false] },
-        { $eq: ["$status", "published"] },
-        { $lte: ["$publish_date", today] },
-        { $in: ["$access_type", ["free", "premium"]] }, // include Premium and Free
-      ],
-    },
-  },
-},
-
-// {
-//   $match: {
-//     $expr: {
-//       $and: [
-//         { $eq: ["$cluster_id", "$$clusterId"] },
-//         { $eq: ["$is_deleted", false] },
-//         { $eq: ["$status", "published"] },
-//         { $lte: ["$publish_date", today] },
-//         {
-//           $or: [
-//             { $eq: ["$access_type", "free"] },
-//             {
-//               $and: [
-//                 { $eq: ["$access_type", "premium"] },
-//                 { $eq: ["$$userHasActiveSubscription", true] }   // Base on the Subscription
-//               ]
-//             }
-//           ]
-//         }
-//       ]
-//     }
-//   }
-// },
-
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$cluster_id", "$$clusterId"] },
+                    { $eq: ["$is_deleted", false] },
+                    { $eq: ["$status", "published"] },
+                    { $lte: ["$publish_date", today] },
+                    { $in: ["$access_type", ["free", "premium"]] }, // include Premium + Free
+                  ],
+                },
+              },
+            },
             { $sort: { publish_date: -1, created_at: -1 } },
             {
               $lookup: {
@@ -199,10 +159,17 @@ export const getPublishedTopicWithArticlesByIdAgg = async (req: Request, res: Re
     ]);
 
     if (!result || result.length === 0)
-      return res.status(404).json({ success: false, message: "Topic not found or not published yet" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Topic not found or not published yet" });
 
     const topicData = result[0];
-    res.json({ success: true, topic: topicData, cluster: topicData.cluster, articles: topicData.articles });
+    res.json({
+      success: true,
+      topic: topicData,
+      cluster: topicData.cluster,
+      articles: topicData.articles,
+    });
   } catch (error: any) {
     console.error("Aggregation get topic by ID error:", error);
     res.status(500).json({ success: false, message: error.message || "Server error" });
@@ -213,7 +180,16 @@ export const getPublishedTopicWithArticlesByIdAgg = async (req: Request, res: Re
 
 export const getTopics = async (req: Request, res: Response) => {
   try {
-    const { status, cluster_id, search, page, limit, includeDeleted, access_type } = req.query;
+    const {
+      status,
+      cluster_id,
+      search,
+      page,
+      limit,
+      includeDeleted,
+      access_type,
+    } = req.query;
+
     const filter: Record<string, any> = {};
 
     if (status) filter.status = status;
@@ -231,7 +207,14 @@ export const getTopics = async (req: Request, res: Response) => {
     const pageNum = parseInt(String(page)) || 1;
     const perPage = parseInt(String(limit)) || 10;
 
-    const { topics, total } = await topicService.getAll(filter, pageNum, perPage);
+    const sort = { createdAt: -1 };
+
+ const { topics, total } = await topicService.getAll(
+  filter,
+  pageNum,
+  perPage
+);
+
 
     res.json({
       success: true,
@@ -242,7 +225,10 @@ export const getTopics = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error("Get topics error:", error);
-    res.status(500).json({ success: false, message: error.message || "Server error" });
+    res.status(500).json({
+      success: false,
+      message: error.message || "Server error",
+    });
   }
 };
 
@@ -252,7 +238,9 @@ export const getTopicById = async (req: Request, res: Response) => {
     const topic = await topicService.getById(id);
 
     if (!topic)
-      return res.status(404).json({ success: false, message: "Topic not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Topic not found" });
 
     res.json({ success: true, topic });
   } catch (error: any) {
@@ -263,10 +251,25 @@ export const getTopicById = async (req: Request, res: Response) => {
 
 export const addTopic = async (req: Request, res: Response) => {
   try {
-    const { cluster_id, title, slug, keywords, summary, status, author, publish_date, read_time_minutes, tags, access_type, is_active } = req.body;
+    const {
+      cluster_id,
+      title,
+      slug,
+      keywords,
+      summary,
+      status,
+      author,
+      publish_date,
+      read_time_minutes,
+      tags,
+      access_type,
+      is_active,
+    } = req.body;
 
     if (!cluster_id || !title || !slug) {
-      return res.status(400).json({ success: false, message: "cluster_id, title, and slug are required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "cluster_id, title, and slug are required" });
     }
 
     const topicData: any = {
@@ -279,8 +282,8 @@ export const addTopic = async (req: Request, res: Response) => {
       read_time_minutes,
       tags,
       access_type: access_type || "free",
-      status: ["draft","published","archived"].includes(status) ? status : "draft",
-      is_active: typeof is_active === "number" ? is_active : 0, // manual toggle default
+      status: ["draft", "published", "archived"].includes(status) ? status : "draft",
+      is_active: typeof is_active === "number" ? is_active : 0,
     };
 
     if (publish_date) topicData.publish_date = new Date(publish_date);
@@ -290,10 +293,18 @@ export const addTopic = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error("Add topic error:", error);
     if (error?.code === 11000) {
-      const dupKey = error.keyValue ? Object.keys(error.keyValue)[0] : "field";
-      return res.status(400).json({ success: false, message: `${dupKey} already exists`, field: dupKey });
+      const dupKey = error.keyValue
+        ? Object.keys(error.keyValue)[0]
+        : "field";
+      return res.status(400).json({
+        success: false,
+        message: `${dupKey} already exists`,
+        field: dupKey,
+      });
     }
-    res.status(500).json({ success: false, message: error.message || "Server error" });
+    res
+      .status(500)
+      .json({ success: false, message: error.message || "Server error" });
   }
 };
 
@@ -305,35 +316,50 @@ export const updateTopic = async (req: Request, res: Response) => {
     const updateData: any = { ...rest };
     if (access_type) updateData.access_type = access_type;
     if (publish_date) updateData.publish_date = new Date(publish_date);
-    if (status && ["draft","published","archived"].includes(status)) updateData.status = status;
-    if (typeof is_active === "number") updateData.is_active = is_active; // manual toggle only
+    if (status && ["draft", "published", "archived"].includes(status))
+      updateData.status = status;
+    if (typeof is_active === "number") updateData.is_active = is_active;
 
     const topic = await topicService.update(id, updateData);
-    if (!topic) return res.status(404).json({ success: false, message: "Topic not found" });
+    if (!topic)
+      return res
+        .status(404)
+        .json({ success: false, message: "Topic not found" });
 
     res.json({ success: true, topic });
   } catch (error: any) {
     console.error("Update topic error:", error);
     if (error?.code === 11000) {
-      const dupKey = error.keyValue ? Object.keys(error.keyValue)[0] : "field";
-      return res.status(400).json({ success: false, message: `${dupKey} already exists`, field: dupKey });
+      const dupKey = error.keyValue
+        ? Object.keys(error.keyValue)[0]
+        : "field";
+      return res.status(400).json({
+        success: false,
+        message: `${dupKey} already exists`,
+        field: dupKey,
+      });
     }
-    res.status(500).json({ success: false, message: error.message || "Server error" });
+    res
+      .status(500)
+      .json({ success: false, message: error.message || "Server error" });
   }
 };
 
-// ==================== TOGGLE IS_ACTIVE ONLY ====================
+// Toggle is_active only
 export const toggleTopicStatus = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const topic = await Topic.findById(id);
-    if (!topic) return res.status(404).json({ success: false, message: "Topic not found" });
+
+    if (!topic)
+      return res
+        .status(404)
+        .json({ success: false, message: "Topic not found" });
 
     topic.is_active = topic.is_active === 1 ? 0 : 1;
     topic.updated_at = new Date();
     await topic.save();
 
-    // Only return current status
     res.json({
       success: true,
       message: topic.is_active === 1 ? "Active" : "Inactive",
@@ -341,7 +367,6 @@ export const toggleTopicStatus = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error("Toggle is_active error:", error);
-    // Silently fail without toast on frontend
     res.status(500).json({ success: false, message: error.message || "Server error" });
   }
 };
@@ -352,9 +377,15 @@ export const deleteTopic = async (req: Request, res: Response) => {
     const { id } = req.params;
     const topic = await topicService.softDelete(id);
 
-    if (!topic) return res.status(404).json({ success: false, message: "Topic not found" });
+    if (!topic)
+      return res
+        .status(404)
+        .json({ success: false, message: "Topic not found" });
 
-    res.json({ success: true, message: "Topic deleted successfully" });
+    res.json({
+      success: true,
+      message: "Topic deleted successfully",
+    });
   } catch (error: any) {
     console.error("Delete topic error:", error);
     res.status(500).json({ success: false, message: error.message || "Server error" });
@@ -367,9 +398,15 @@ export const restoreTopic = async (req: Request, res: Response) => {
     const { id } = req.params;
     const topic = await topicService.restore(id);
 
-    if (!topic) return res.status(404).json({ success: false, message: "Topic not found" });
+    if (!topic)
+      return res
+        .status(404)
+        .json({ success: false, message: "Topic not found" });
 
-    res.json({ success: true, message: "Topic restored successfully" });
+    res.json({
+      success: true,
+      message: "Topic restored successfully",
+    });
   } catch (error: any) {
     console.error("Restore topic error:", error);
     res.status(500).json({ success: false, message: error.message || "Server error" });

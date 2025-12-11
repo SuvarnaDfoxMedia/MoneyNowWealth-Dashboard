@@ -1,5 +1,6 @@
-import Article, { type IArticle } from "../models/articleModel.ts";
+import Article, { type IArticle } from "../models/articleModel";
 
+// Get all articles with pagination, filtering, and sorting
 export const getArticles = async (query: any) => {
   const {
     status,
@@ -12,26 +13,29 @@ export const getArticles = async (query: any) => {
     sortOrder,
   } = query || {};
 
-  const pageNum = parseInt(page as string) || 1;
-  const perPage = parseInt(limit as string) || 10;
+  // Pagination
+  const pageNum = Math.max(parseInt(page as string) || 1, 1);
+  const perPage = Math.max(parseInt(limit as string) || 10, 1);
   const skip = (pageNum - 1) * perPage;
 
   const filter: Record<string, any> = { is_deleted: false };
 
-  // Exclude archived by default
+  // Default status filter
   filter.status = { $ne: "archived" };
   if (status) filter.status = status;
   if (topic_id) filter.topic_id = topic_id;
-  if (includeInactive !== "true") filter.is_active = 1;
 
+  // Search
   if (search) {
+    const s = String(search).trim();
     filter.$or = [
-      { title: { $regex: search, $options: "i" } },
-      { focus_keyword: { $regex: search, $options: "i" } },
-      { article_code: { $regex: search, $options: "i" } },
+      { title: { $regex: s, $options: "i" } },
+      { focus_keyword: { $regex: s, $options: "i" } },
+      { article_code: { $regex: s, $options: "i" } },
     ];
   }
 
+  // Sorting
   const sortConfig: Record<string, 1 | -1> = {};
   if (sortField) {
     sortConfig[sortField] = sortOrder === "desc" ? -1 : 1;
@@ -50,19 +54,23 @@ export const getArticles = async (query: any) => {
   ]);
 
   return {
+    success: true,
     articles,
     total,
     currentPage: pageNum,
     totalPages: Math.ceil(total / perPage),
+    limit: perPage,
   };
 };
 
+// Get single article by ID
 export const getArticleById = async (id: string) => {
   return await Article.findById(id)
     .populate("topic_id", "topic_code title")
     .exec();
 };
 
+// Create a new article
 export const createArticle = async (data: Partial<IArticle>) => {
   if (data.slug) {
     const existingSlug = await Article.findOne({ slug: data.slug });
@@ -78,6 +86,7 @@ export const createArticle = async (data: Partial<IArticle>) => {
     data.status = "draft";
   }
 
+  // Generate next article code
   const lastArticle = await Article.findOne({}, { article_code: 1 })
     .sort({ created_at: -1 })
     .lean();
@@ -104,6 +113,7 @@ export const createArticle = async (data: Partial<IArticle>) => {
   return article;
 };
 
+// Update an existing article
 export const updateArticle = async (id: string, data: Partial<IArticle>) => {
   if (data.slug) {
     const existingSlug = await Article.findOne({
@@ -117,27 +127,30 @@ export const updateArticle = async (id: string, data: Partial<IArticle>) => {
     delete data.hero_image;
   }
 
-  // Validate and default status
   if (!["draft", "published", "archived"].includes(data.status || "")) {
     data.status = "draft";
   }
 
-  return await Article.findByIdAndUpdate(id, data, { new: true });
+  return await Article.findByIdAndUpdate(id, data, { new: true }).exec();
 };
 
+// Toggle article status
 export const toggleArticleStatus = async (id: string) => {
   if (!id || id === "undefined") throw new Error("Invalid article ID");
+
   const article = await Article.findById(id);
   if (!article) throw new Error("Article not found");
+
   article.is_active = article.is_active === 1 ? 0 : 1;
   await article.save();
   return article;
 };
 
+// Soft delete an article
 export const deleteArticle = async (id: string) => {
   return await Article.findByIdAndUpdate(
     id,
     { is_deleted: true, is_active: 0, status: "archived" },
     { new: true }
-  );
+  ).exec();
 };
