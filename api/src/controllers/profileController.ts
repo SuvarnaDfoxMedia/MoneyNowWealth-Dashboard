@@ -24,7 +24,8 @@ export const getProfile = async (req: AuthenticatedRequest, res: Response) => {
 
     res.json({
       id: user._id,
-      name: `${user.firstname} ${user.lastname}`.trim(),
+      firstname: user.firstname,
+      lastname: user.lastname,
       email: user.email,
       phone: user.mobile || null,
       address: user.address || null,
