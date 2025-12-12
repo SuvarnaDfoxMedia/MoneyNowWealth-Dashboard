@@ -110,11 +110,11 @@ const handleValidationErrors = (
 /* -------------------- PROFILE ROUTES -------------------- */
 
 // Public GET route? Usually profile is protected, so keep protect
-router.get("/", protect, getProfile);
+router.get("/get-profile", protect, getProfile);
 
 // Protected PUT route for updating profile
 router.put(
-  "/",
+  "/profile",
   protect,
   upload.single("profileImage"),
   updateValidation,
