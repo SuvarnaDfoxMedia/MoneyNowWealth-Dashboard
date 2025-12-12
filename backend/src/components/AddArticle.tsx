@@ -1380,7 +1380,7 @@ export default function AddArticle() {
           </div>
 
           <div>
-            <label className="font-medium text-gray-700">Focus Keyword</label>
+            <label className="font-medium text-gray-700">Seo Keyword</label>
             <input name="focus_keyword" value={values.focus_keyword} onChange={onChange} className="w-full border mt-2 p-2 rounded-md" />
           </div>
         </div>

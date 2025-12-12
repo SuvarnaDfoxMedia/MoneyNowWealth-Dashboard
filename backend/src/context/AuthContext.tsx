@@ -1,5 +1,3 @@
-
-
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import axios from "axios";
 
@@ -31,15 +29,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const clearAuth = () => setUser(null);
 
+  /* ------------------------------ REFRESH USER ------------------------------ */
   const refreshUser = async () => {
     try {
-      const res = await axios.get(`${backendUrl}/get-profile`, { withCredentials: true });
-      setUser(res.data.user || res.data);
+      const res = await axios.get(`${backendUrl}/profile`, { withCredentials: true });
+      const data = res.data.user || res.data;
+
+      const [firstname = "", lastname = ""] = data.name ? data.name.split(" ") : ["", ""];
+
+      setUser({
+        ...data,
+        firstname,
+        lastname,
+      });
     } catch {
-      clearAuth();
+      try {
+        const res = await axios.get(`${backendUrl}/get-profile`, { withCredentials: true });
+        setUser(res.data.user || res.data);
+      } catch {
+        clearAuth();
+      }
     }
   };
 
+  /* ------------------------------ LOGIN ------------------------------ */
   const login = async (email: string, password: string) => {
     try {
       const res = await axios.post(
@@ -47,8 +60,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         { email, password },
         { withCredentials: true }
       );
-      if (!res.data.user) throw new Error("Invalid email or password");
-      setUser(res.data.user);
+
+      if (!res.data.user) throw new Error("Invalid credentials");
+
+      const data = res.data.user;
+      const [firstname = "", lastname = ""] = data.name ? data.name.split(" ") : ["", ""];
+
+      setUser({
+        ...data,
+        firstname,
+        lastname,
+      });
     } catch (err: any) {
       clearAuth();
       const msg = err.response?.data?.message || "Invalid email or password";
@@ -56,6 +78,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  /* ------------------------------ LOGOUT ------------------------------ */
   const logout = async () => {
     try {
       await axios.post(`${backendUrl}/auth/logout`, {}, { withCredentials: true });
@@ -67,10 +90,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  /* ------------------------------ INITIAL LOAD ------------------------------ */
   useEffect(() => {
     const init = async () => {
-      
-      //await refreshUser();
+      // await refreshUser(); // Uncomment if you want to fetch user on app load
       setLoading(false);
     };
     init();
@@ -83,17 +106,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
+/* ------------------------------ USE AUTH HOOK ------------------------------ */
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) throw new Error("useAuth must be used within AuthProvider");
   return context;
 };
 
-// Optional helpers for axios interceptors
+/* ------------------------------ EXTRA HELPERS ------------------------------ */
 export const refreshAuthUser = async () => {
   try {
-    const res = await axios.get(`${backendUrl}/auth/profile`, { withCredentials: true });
-    return res.data.user;
+    const res = await axios.get(`${backendUrl}/profile`, { withCredentials: true });
+    const data = res.data.user || res.data;
+    const [firstname = "", lastname = ""] = data.name ? data.name.split(" ") : ["", ""];
+    return { ...data, firstname, lastname };
   } catch {
     throw new Error("Refresh failed");
   }
