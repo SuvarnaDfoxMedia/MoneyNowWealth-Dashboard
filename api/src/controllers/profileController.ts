@@ -1,3 +1,6 @@
+
+
+
 // import express from "express";
 // import { validationResult } from "express-validator";
 // import User, { type IUser } from "../models/userModel";
@@ -24,7 +27,8 @@
 
 //     res.json({
 //       id: user._id,
-//       name: `${user.firstname} ${user.lastname}`.trim(),
+//       firstname: user.firstname,
+//       lastname: user.lastname,
 //       email: user.email,
 //       phone: user.mobile || null,
 //       address: user.address || null,
@@ -49,25 +53,33 @@
 //       return res.status(400).json({ errors: errors.array() });
 //     }
 
-//     const { name, phone, address } = req.body;
+//     const { firstname, lastname, phone, address } = req.body;
 
-//     // Split full name into firstname + lastname
-//     let firstname = "";
-//     let lastname = "";
-//     if (name && typeof name === "string") {
-//       const parts = name.trim().split(" ");
-//       firstname = parts.shift() || "";
-//       lastname = parts.join(" ") || "";
+//     // Validate required fields
+//     const validationErrors = [];
+//     if (!firstname || firstname.trim() === "") {
+//       validationErrors.push({ param: "firstname", msg: "Firstname is required" });
+//     }
+//     if (!lastname || lastname.trim() === "") {
+//       validationErrors.push({ param: "lastname", msg: "Lastname is required" });
+//     }
+//     if (validationErrors.length > 0) {
+//       return res.status(400).json({ message: "Validation failed", errors: validationErrors });
 //     }
 
-//     const updateData: Partial<IUser> = {};
-//     if (firstname !== undefined) updateData.firstname = firstname;
-//     if (lastname !== undefined) updateData.lastname = lastname;
-//     if (phone !== undefined) updateData.mobile = phone; 
-//     if (address !== undefined) updateData.address = address;
-//     if (req.file?.filename) updateData.profileImage = req.file.filename;
+//     const updateData: Partial<IUser> = {
+//       firstname: firstname.trim(),
+//       lastname: lastname.trim(),
+//       mobile: phone?.trim(),
+//       address: address?.trim(),
+//     };
 
-//     const updatedUser: IUser | null = await User.findByIdAndUpdate(
+//     // If profile image uploaded
+//     if (req.file?.filename) {
+//       updateData.profileImage = req.file.filename;
+//     }
+
+//     const updatedUser = await User.findByIdAndUpdate(
 //       req.user.id,
 //       { $set: updateData },
 //       { new: true, runValidators: true }
@@ -81,7 +93,8 @@
 //       message: "Profile updated successfully",
 //       user: {
 //         id: updatedUser._id,
-//         name: `${updatedUser.firstname} ${updatedUser.lastname}`.trim(),
+//         firstname: updatedUser.firstname,
+//         lastname: updatedUser.lastname,
 //         email: updatedUser.email,
 //         phone: updatedUser.mobile || null,
 //         address: updatedUser.address || null,
@@ -96,6 +109,7 @@
 //     res.status(500).json({ message: "Server error" });
 //   }
 // };
+
 
 
 import express from "express";
@@ -150,33 +164,25 @@ export const updateProfile = async (req: AuthenticatedRequest, res: Response) =>
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { firstname, lastname, phone, address } = req.body;
+    const { name, phone, address } = req.body;
 
-    // Validate required fields
-    const validationErrors = [];
-    if (!firstname || firstname.trim() === "") {
-      validationErrors.push({ param: "firstname", msg: "Firstname is required" });
-    }
-    if (!lastname || lastname.trim() === "") {
-      validationErrors.push({ param: "lastname", msg: "Lastname is required" });
-    }
-    if (validationErrors.length > 0) {
-      return res.status(400).json({ message: "Validation failed", errors: validationErrors });
+    // Split full name into firstname + lastname
+    let firstname = "";
+    let lastname = "";
+    if (name && typeof name === "string") {
+      const parts = name.trim().split(" ");
+      firstname = parts.shift() || "";
+      lastname = parts.join(" ") || "";
     }
 
-    const updateData: Partial<IUser> = {
-      firstname: firstname.trim(),
-      lastname: lastname.trim(),
-      mobile: phone?.trim(),
-      address: address?.trim(),
-    };
+    const updateData: Partial<IUser> = {};
+    if (firstname !== undefined) updateData.firstname = firstname;
+    if (lastname !== undefined) updateData.lastname = lastname;
+    if (phone !== undefined) updateData.mobile = phone; 
+    if (address !== undefined) updateData.address = address;
+    if (req.file?.filename) updateData.profileImage = req.file.filename;
 
-    // If profile image uploaded
-    if (req.file?.filename) {
-      updateData.profileImage = req.file.filename;
-    }
-
-    const updatedUser = await User.findByIdAndUpdate(
+    const updatedUser: IUser | null = await User.findByIdAndUpdate(
       req.user.id,
       { $set: updateData },
       { new: true, runValidators: true }
@@ -190,8 +196,7 @@ export const updateProfile = async (req: AuthenticatedRequest, res: Response) =>
       message: "Profile updated successfully",
       user: {
         id: updatedUser._id,
-        firstname: updatedUser.firstname,
-        lastname: updatedUser.lastname,
+        name: `${updatedUser.firstname} ${updatedUser.lastname}`.trim(),
         email: updatedUser.email,
         phone: updatedUser.mobile || null,
         address: updatedUser.address || null,
