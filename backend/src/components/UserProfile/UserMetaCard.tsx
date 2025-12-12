@@ -1,3 +1,8 @@
+
+
+
+
+
 import { useState, useEffect, useRef } from "react";
 import { useModal } from "../../hooks/useModal";
 import { Modal } from "../ui/modal";
@@ -25,91 +30,81 @@ export default function UserMetaCard() {
     phone: "",
     address: "",
   });
-
   const [profileImage, setProfileImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string>("/images/user/owner.jpg");
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const firstErrorRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
 
   const backendUrl = import.meta.env.VITE_API_BASE;
-  const imageUrl = backendUrl.replace("/api", "");
-
-  /* ------------------------------ RESET FORM ------------------------------ */
+   const imageUrl = backendUrl.replace("/api", "");
   const resetForm = () => {
-    if (!user) return;
-
-    setFormData({
-      firstname: user.firstname || "",
-      lastname: user.lastname || "",
-      phone: user.phone || "",
-      address: user.address || "",
-    });
-
-    setProfileImage(null);
-    setImagePreview(
-      user.profileImage ? `${imageUrl}${user.profileImage}?v=${Date.now()}` : "/images/user/owner.jpg"
-    );
-
-    setErrors({});
+    if (user) {
+      setFormData({
+        firstname: user.firstname || "",
+        lastname: user.lastname || "",
+        phone: user.phone || "",
+        address: user.address || "",
+      });
+      setProfileImage(null);
+      setImagePreview(
+        user.profileImage ? `${imageUrl}${user.profileImage}?v=${Date.now()}` : null
+      );
+      setErrors({});
+    }
   };
 
   useEffect(() => {
-    if (user) resetForm();
+    resetForm();
   }, [user]);
 
-  /* ------------------------------ IMAGE CHANGE ------------------------------ */
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setErrors((prev) => ({ ...prev, profileImage: "" }));
-
     if (e.target.files?.[0]) {
       const file = e.target.files[0];
-
       if (!file.type.startsWith("image/")) {
         setErrors((prev) => ({ ...prev, profileImage: "Only image files are allowed!" }));
         return;
       }
-
       if (file.size > 5 * 1024 * 1024) {
         setErrors((prev) => ({ ...prev, profileImage: "File size cannot exceed 5MB!" }));
         return;
       }
-
       setProfileImage(file);
-
       const reader = new FileReader();
       reader.onload = () => setImagePreview(reader.result as string);
       reader.readAsDataURL(file);
     }
   };
 
-  /* ------------------------------ SAVE CHANGES ------------------------------ */
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setErrors({});
 
-    // Frontend validation
     const newErrors: Record<string, string> = {};
     if (!formData.firstname.trim()) newErrors.firstname = "First Name is required";
     if (!formData.lastname.trim()) newErrors.lastname = "Last Name is required";
     if (!formData.phone.trim()) newErrors.phone = "Phone is required";
-    if (formData.phone.trim().length < 10) newErrors.phone = "Phone must be at least 10 digits";
+    if (formData.phone.trim() && formData.phone.trim().length < 10)
+      newErrors.phone = "Phone must be at least 10 characters";
     if (!formData.address.trim()) newErrors.address = "Address is required";
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
+
+      // Auto-focus first invalid field
       const firstKey = Object.keys(newErrors)[0];
       const field = document.getElementById(firstKey);
       field?.focus();
+
       setLoading(false);
       return;
     }
 
     try {
       const submitData = new FormData();
-      submitData.append("firstname", formData.firstname);
-      submitData.append("lastname", formData.lastname);
+      submitData.append("name", `${formData.firstname} ${formData.lastname}`);
       submitData.append("phone", formData.phone);
       submitData.append("address", formData.address);
       if (profileImage) submitData.append("profileImage", profileImage);
@@ -120,9 +115,11 @@ export default function UserMetaCard() {
       });
 
       await refreshUser();
-      toast.success(res.data.message || "Profile updated successfully!");
 
-      if (profileImage && res.data.user?.profileImage) {
+      toast.success(res.data.message);
+
+      if (profileImage && res.data.user.profileImage) {
+       
         setImagePreview(`${imageUrl}${res.data.user.profileImage}?v=${Date.now()}`);
       }
 
@@ -131,11 +128,18 @@ export default function UserMetaCard() {
       if (err.response?.data?.errors) {
         const fieldErrors: Record<string, string> = {};
         err.response.data.errors.forEach((e: any) => {
-          if (e.param) fieldErrors[e.param] = e.msg;
+          if (e.param === "name") {
+            fieldErrors.firstname = e.msg;
+            fieldErrors.lastname = e.msg;
+          }
+          if (e.param === "phone") fieldErrors.phone = e.msg;
+          if (e.param === "address") fieldErrors.address = e.msg;
         });
         setErrors(fieldErrors);
+      } else if (err.response?.data?.message) {
+        toast.error(err.response.data.message);
       } else {
-        toast.error(err.response?.data?.message || "Failed to update profile.");
+        toast.error("Failed to update profile.");
       }
     } finally {
       setLoading(false);
@@ -151,22 +155,35 @@ export default function UserMetaCard() {
 
   return (
     <>
-      {/* User Summary Card */}
+      {/* User Card */}
       <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
         <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex flex-col items-center w-full gap-6 xl:flex-row">
             <div className="w-20 h-20 overflow-hidden border border-gray-200 rounded-full dark:border-gray-800">
-              <img src={imagePreview} alt="Profile" className="object-cover w-full h-full" />
+              <img
+                src={imagePreview || "/images/user/owner.jpg"}
+                alt="Profile"
+                className="object-cover w-full h-full"
+              />
             </div>
 
             <div className="order-3 xl:order-2">
               <h4 className="mb-2 text-lg font-semibold text-center text-gray-800 dark:text-white/90 xl:text-left">
                 {`${formData.firstname} ${formData.lastname}`}
               </h4>
-
               <div className="flex flex-col items-center gap-1 text-center xl:flex-row xl:gap-3 xl:text-left">
-                {formData.phone && <p className="text-sm text-gray-500 dark:text-gray-400">{formData.phone}</p>}
-                {formData.address && <p className="text-sm text-gray-500 dark:text-gray-400">{formData.address}</p>}
+                {formData.phone && (
+                  <>
+                    <div className="hidden h-3.5 w-px bg-gray-300 dark:bg-gray-700 xl:block"></div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{formData.phone}</p>
+                  </>
+                )}
+                {formData.address && (
+                  <>
+                    <div className="hidden h-3.5 w-px bg-gray-300 dark:bg-gray-700 xl:block"></div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{formData.address}</p>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -184,7 +201,9 @@ export default function UserMetaCard() {
       <Modal isOpen={isOpen} onClose={closeModal} className="max-w-[700px] m-4">
         <div className="relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
           <div className="px-2 pr-14">
-            <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">Edit Personal Information</h4>
+            <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
+              Edit Personal Information
+            </h4>
             <p className="mb-6 text-sm text-gray-500 dark:text-gray-400 lg:mb-7">
               Update your details to keep your profile up-to-date.
             </p>
@@ -197,7 +216,6 @@ export default function UserMetaCard() {
                 <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">
                   Profile Image
                 </h5>
-
                 <div className="flex items-center gap-6 mb-6">
                   <div className="relative w-[100px] h-[100px] border border-gray-300 rounded-lg overflow-hidden flex items-center justify-center bg-gray-50">
                     {imagePreview ? (
@@ -206,7 +224,6 @@ export default function UserMetaCard() {
                       <span className="text-gray-400 text-center text-sm">No image selected</span>
                     )}
                   </div>
-
                   <div className="flex-1">
                     <Label htmlFor="profileImage">Upload New Image</Label>
                     <input
@@ -216,7 +233,9 @@ export default function UserMetaCard() {
                       onChange={handleImageChange}
                       className={inputClass("profileImage")}
                     />
-                    {errors.profileImage && <p className="mt-1 text-sm text-red-600">{errors.profileImage}</p>}
+                    {errors.profileImage && (
+                      <p className="mt-1 text-sm text-red-600">{errors.profileImage}</p>
+                    )}
                     <p className="mt-1 text-xs text-gray-500">JPG, PNG or GIF (Max 5MB)</p>
                   </div>
                 </div>
@@ -224,7 +243,9 @@ export default function UserMetaCard() {
 
               {/* Personal Info */}
               <div className="mt-7">
-                <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">Personal Information</h5>
+                <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">
+                  Personal Information
+                </h5>
 
                 <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
                   <div>
@@ -234,11 +255,15 @@ export default function UserMetaCard() {
                       name="firstname"
                       type="text"
                       value={formData.firstname}
-                      onChange={(e) => setFormData({ ...formData, firstname: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, firstname: e.target.value })
+                      }
                       placeholder="Enter your first name"
                       className={inputClass("firstname")}
                     />
-                    {errors.firstname && <p className="mt-1 text-sm text-red-600">{errors.firstname}</p>}
+                    {errors.firstname && (
+                      <p className="mt-1 text-sm text-red-600">{errors.firstname}</p>
+                    )}
                   </div>
 
                   <div>
@@ -248,11 +273,15 @@ export default function UserMetaCard() {
                       name="lastname"
                       type="text"
                       value={formData.lastname}
-                      onChange={(e) => setFormData({ ...formData, lastname: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, lastname: e.target.value })
+                      }
                       placeholder="Enter your last name"
                       className={inputClass("lastname")}
                     />
-                    {errors.lastname && <p className="mt-1 text-sm text-red-600">{errors.lastname}</p>}
+                    {errors.lastname && (
+                      <p className="mt-1 text-sm text-red-600">{errors.lastname}</p>
+                    )}
                   </div>
 
                   <div>
@@ -262,11 +291,15 @@ export default function UserMetaCard() {
                       name="phone"
                       type="text"
                       value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, phone: e.target.value })
+                      }
                       placeholder="Enter your phone number"
                       className={inputClass("phone")}
                     />
-                    {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone}</p>}
+                    {errors.phone && (
+                      <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
+                    )}
                   </div>
 
                   <div className="col-span-2">
@@ -275,12 +308,16 @@ export default function UserMetaCard() {
                       id="address"
                       name="address"
                       value={formData.address}
-                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, address: e.target.value })
+                      }
                       placeholder="Enter your address"
                       rows={3}
                       className={inputClass("address")}
                     />
-                    {errors.address && <p className="mt-1 text-sm text-red-600">{errors.address}</p>}
+                    {errors.address && (
+                      <p className="mt-1 text-sm text-red-600">{errors.address}</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -301,3 +338,5 @@ export default function UserMetaCard() {
     </>
   );
 }
+
+
