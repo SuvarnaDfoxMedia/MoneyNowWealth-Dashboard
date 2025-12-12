@@ -286,42 +286,6 @@ export const registerUser = async (req: Request, res: Response) => {
 };
 
 
-
-
-
-
-
-
-/* ------------------------------------------------------------------
-   EXAMPLE: CHANGE PASSWORD
------------------------------------------------------------------- */
-// export const changePassword = async (req: AuthenticatedRequest, res: Response) => {
-//   try {
-//     const userId = req.userId;
-//     if (!userId) return res.status(401).json({ message: "Unauthorized" });
-
-//     const user: IUser | null = await User.findById(userId).select("+password");
-//     if (!user) return res.status(404).json({ message: "User not found" });
-
-//     const { oldPassword, newPassword } = req.body;
-//     if (!oldPassword || !newPassword)
-//       return res.status(400).json({ message: "Missing passwords" });
-
-//     const isMatch = await bcrypt.compare(oldPassword, user.password || "");
-//     if (!isMatch) return res.status(400).json({ message: "Old password incorrect" });
-
-//     const hashedPassword = await bcrypt.hash(newPassword, 10);
-//     user.password = hashedPassword;
-//     await user.save();
-
-//     res.status(200).json({ message: "Password changed successfully" });
-//   } catch (err: any) {
-//     console.error(err);
-//     res.status(500).json({ message: err.message || "Server error" });
-//   }
-// };
-
-
 // ================= LOGIN USER =================
 
 export const loginUser = async (req: Request, res: Response) => {
@@ -368,38 +332,6 @@ export const logoutUser = (req: Request, res: Response) => {
      .json({ message: "Logged out successfully" });
 };
 
-// ================= FORGOT PASSWORD =================
-// export const forgotPassword = async (req: Request, res: Response) => {
-//   try {
-//     const { email } = req.body;
-//     const user: IUser | null = await User.findOne({ email });
-//     if (!user) return res.status(404).json({ message: "User not found" });
-
-//     const resetToken = jwt.sign({ id: user._id }, process.env.JWT_KEY!, { expiresIn: "10m" });
-//     const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
-
-//     const html = `
-//       <div style="font-family:sans-serif; max-width:600px; margin:auto; padding:30px; border-radius:12px; background:#f7f9fc;">
-//         <h2 style="color:#140084;">Hi ${user.firstname || "User"},</h2>
-//         <p>We received a request to reset your password. Click the link below to set a new password. This link expires in 10 minutes:</p>
-//         <p style="word-break: break-all; font-size:16px; line-height:1.5;">
-//           <a href="${resetUrl}" style="color:#140084; text-decoration:underline;">${resetUrl}</a>
-//         </p>
-//         <p style="font-size:14px;color:#777;">If you did not request a password reset, please ignore this email.</p>
-//         <p style="font-size:14px;color:#999;margin-top:20px;">— MoneyNow Wealth Team</p>
-//       </div>
-//     `;
-
-//     sendEmail({ to: user.email, subject: "Reset Your Password", html }).catch(err =>
-//       console.error("Email error:", err.message)
-//     );
-
-//     res.json({ message: "Password reset link sent to your email" });
-//   } catch (error: any) {
-//     console.error("Forgot password error:", error.message);
-//     res.status(500).json({ message: error.message });
-//   }
-// };
 
 export const forgotPassword = async (req: Request, res: Response) => {
   try {
@@ -443,39 +375,6 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
 
 // ================= RESET PASSWORD =================
-// export const resetPassword = async (req: Request, res: Response) => {
-//   try {
-//     const { token } = req.params;
-//     const { password } = req.body;
-
-//     let decoded: { id: string };
-//     try {
-//       decoded = jwt.verify(token, process.env.JWT_KEY!) as { id: string };
-//     } catch (error: any) {
-//       return res.status(400).json({ success: false, message: "Invalid or expired token." });
-//     }
-
-//     const user: IUser | null = await User.findById(decoded.id).select("+password");
-//     if (!user) return res.status(404).json({ success: false, message: "User not found." });
-
-//     const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).{8,128}$/;
-//     if (!passwordRegex.test(password))
-//       return res.status(400).json({
-//         success: false,
-//         message: "Password must be 8-128 chars, include 1 uppercase, 1 number, and 1 special character.",
-//       });
-
-//     user.password = await bcrypt.hash(password, 10);
-//     await user.save();
-
-//     return res.json({ success: true, message: "Password reset successfully." });
-//   } catch (error: any) {
-//     console.error("Reset password error:", error.message);
-//     return res.status(500).json({ success: false, message: "Server error." });
-//   }
-// };
-
-// ================= RESET PASSWORD =================
 
 
 export const resetPassword = async (req: Request, res: Response) => {
@@ -511,39 +410,6 @@ export const resetPassword = async (req: Request, res: Response) => {
   }
 };
 
-
-
-
-// ================= CHANGE PASSWORD =================
-// export const changePassword = async (req: AuthenticatedRequest, res: Response) => {
-//   try {
-//     const userId = req.user?.id;
-//     if (!userId) return res.status(401).json({ message: "Not authorized" });
-
-//     const { oldPassword, newPassword } = req.body;
-//     if (!oldPassword || !newPassword) return res.status(400).json({ message: "Old and new password are required" });
-
-//     const user: IUser | null = await User.findById(userId).select("+password");
-//     if (!user || !user.password) return res.status(404).json({ message: "User not found or password missing" });
-
-//     const isMatch = await bcrypt.compare(oldPassword, user.password);
-//     if (!isMatch) return res.status(401).json({ message: "Old password is incorrect" });
-
-//     const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/;
-//     if (!passwordRegex.test(newPassword))
-//       return res.status(400).json({
-//         message: "New password must be at least 8 characters, include 1 uppercase, 1 number, and 1 special character.",
-//       });
-
-//     user.password = await bcrypt.hash(newPassword, 10);
-//     await user.save();
-
-//     res.json({ message: "Password changed successfully" });
-//   } catch (error: any) {
-//     console.error("Change password error:", error.message);
-//     res.status(500).json({ message: "Server error during password change" });
-//   }
-// };
 
 export const changePassword = async (req: AuthenticatedRequest, res: Response) => {
   try {
