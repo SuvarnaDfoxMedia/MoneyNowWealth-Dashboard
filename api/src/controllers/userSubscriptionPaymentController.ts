@@ -7,6 +7,7 @@ import SubscriptionPlanModel from "@/models/subscriptionPlan.model";
 import UserSubscriptionPayment from "@/models/userSubscriptionPaymentModel";
 import UserSubscription, { IUserSubscription } from "@/models/userSubscriptionModel";
 
+
 interface AddSubscriptionPaymentBody {
   user_id: string;
   plan_id: string;
@@ -156,3 +157,100 @@ export const getLatestPaymentByUser = async (req: Request, res: Response) => {
     return res.status(500).json({ success: false, message: err.message || "Server error" });
   }
 };
+
+
+export const getUserSubscriptionHistory = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+
+    const payments = await UserSubscriptionPayment.find({ user_id: userId })
+      .populate([
+        { path: "user_subscription_id", select: "status start_date end_date plan_type trial_type" },
+        { path: "plan_id", select: "name price duration" }
+      ])
+      .sort({ payment_date: 1 });
+
+    const orderedPayments = payments.sort((a, b) => {
+      const order = { new: 0, upgrade: 1, downgrade: 2 };
+      return (order[a.type as keyof typeof order] || 99) - (order[b.type as keyof typeof order] || 99);
+    });
+
+    return res.status(200).json({
+      success: true,
+      total: orderedPayments.length,
+      payments: orderedPayments.map((p) => {
+        // Cast via unknown first
+        const sub = p.user_subscription_id as unknown as IUserSubscription;
+        const plan = p.plan_id as unknown as { name: string; price: number; duration: any };
+
+        return {
+          subscriptionId: sub?._id,
+          planName: plan?.name,
+          amount: p.amount,
+          currency: p.currency,
+          type: p.type, // new | upgrade | downgrade
+          trialType: sub?.trial_type,
+          status: sub?.status,
+          startDate: sub?.start_date,
+          endDate: sub?.end_date,
+          paymentDate: p.payment_date,
+          transactionId: p.transaction_id,
+          orderId: p.order_id,
+        };
+      }),
+    });
+  } catch (err) {
+    console.error("Error fetching subscription history:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+
+// export const getUserSubscriptionHistory = async (req: Request, res: Response) => {
+//   try {
+//     const { userId } = req.params;
+
+//     if (!mongoose.Types.ObjectId.isValid(userId)) {
+//       return res.status(400).json({ message: "Invalid user ID" });
+//     }
+
+//     const payments = await UserSubscriptionPayment.find({ user_id: userId })
+//       .populate([
+//         { path: "user_subscription_id", select: "status start_date end_date plan_type trial_type" },
+//         { path: "plan_id", select: "name price duration" }
+//       ])
+//       .sort({ payment_date: 1 }); // sort by payment date ascending
+
+//     const orderedPayments = payments.sort((a, b) => {
+//       const order = { new: 0, upgrade: 1, downgrade: 2 };
+//       return (order[a.type as keyof typeof order] || 99) - (order[b.type as keyof typeof order] || 99);
+//     });
+
+//     return res.status(200).json({
+//       success: true,
+//       total: orderedPayments.length,
+//       payments: orderedPayments.map((p) => ({
+//         subscriptionId: p.user_subscription_id._id,
+//         planName: p.plan_id.name,
+//         amount: p.amount,
+//         currency: p.currency,
+//         type: p.type, // new | upgrade | downgrade
+//         trialType: p.user_subscription_id.trial_type,
+//         status: p.user_subscription_id.status,
+//         startDate: p.user_subscription_id.start_date,
+//         endDate: p.user_subscription_id.end_date,
+//         paymentDate: p.payment_date,
+//         transactionId: p.transaction_id,
+//         orderId: p.order_id,
+//       })),
+//     });
+//   } catch (err) {
+//     console.error("Error fetching subscription history:", err);
+//     return res.status(500).json({ message: "Server error" });
+//   }
+// };

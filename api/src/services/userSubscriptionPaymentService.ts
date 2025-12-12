@@ -2,7 +2,6 @@ import mongoose from "mongoose";
 import UserSubscriptionPayment from "@/models/userSubscriptionPaymentModel";
 import UserSubscription from "@/models/userSubscriptionModel";
 
-// -------------------------------------------------------
 // Helper: Add duration to date
 // -------------------------------------------------------
 const addDuration = (date: Date, value: number, unit: "day" | "month" | "year") => {

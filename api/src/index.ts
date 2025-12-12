@@ -24,9 +24,9 @@ import articleRoutes from "./routes/articleRoutes";
 import subscriptionPlanRoutes from "./routes/subscriptionPlanRoutes";
 import uploadRoutes from "./routes/uploadRoutes";
 import { protect, authorizeRoles } from "./middlewares/authMiddleware";
-import { startTopicScheduler } from "./corn/topicScheduler.js";
+import { startTopicScheduler } from "./cron/topicScheduler.js";
 // import "./corn/subscriptionCron";
-import { startSubscriptionScheduler } from "./corn/subscriptionCron"; 
+import { startSubscriptionScheduler } from "./cron/subscriptionCron"; 
 import userSubscriptionRoutes from "./routes/userSubscriptionRoutes";
 import subscriptionPaymentRoutes from "./routes/userSubscriptionPaymentRoutes";
 import newsletterRoutes from "./routes/newsletterRoutes";  
@@ -86,7 +86,7 @@ app.use(
 
 // API Routes
 app.use("/api/auth", authRoutes);
-app.use("/api", profileRoutes);
+app.use("/api/profile", profileRoutes);
 app.use("/api", clusterRoutes);
 app.use("/api", topicRoutes);
 app.use("/api", articleRoutes);

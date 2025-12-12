@@ -462,9 +462,9 @@ const Footer = () => {
   ];
 
   const policies = [
-    { label: "General Disclaimer", href: "/disclaimer" },
+    { label: "General Disclaimer", href: "/general-disclaimer" },
     { label: "Privacy Policy", href: "/privacy-policy" },
-    { label: "Website Usage Terms and Conditions", href: "/terms" },
+    { label: "Website Usage Terms and Conditions", href: "/terms-condition" },
   ];
 
   // Icon sizes

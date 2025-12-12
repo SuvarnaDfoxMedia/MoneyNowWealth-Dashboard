@@ -1,258 +1,13 @@
-// import bcrypt from "bcryptjs";
-// import jwt from "jsonwebtoken";
-// import dotenv from "dotenv";
-// import type { Request, Response } from "express";
-// import mongoose from "mongoose";
-// import SubscriptionPlanModel, { ISubscriptionPlan } from "../models/subscriptionPlan.model";
-// import User, { IUser } from "../models/userModel";
-// import UserSubscription from "../models/userSubscriptionModel";
-// // import SubscriptionPlanModel from "../models/subscriptionPlan.model";
-// import UserSubscriptionPayment from "../models/userSubscriptionPaymentModel";
-// import { sendEmail } from "../utils/emails";
-// import { userSubscriptionPaymentService } from "../services/userSubscriptionPaymentService";
-// import type { AuthenticatedRequest } from "../middlewares/authMiddleware";
-// import { Types } from "mongoose";
-
-// dotenv.config();
-
-// const JWT_EXPIRES = 7 * 24 * 60 * 60 * 1000; // 7 days
-
-// const generateToken = (userId: string, role: string) =>
-//   jwt.sign({ id: userId, role }, process.env.JWT_KEY!, { expiresIn: "7d" });
-
-// // ---------------------- Add Duration to Date Helper ----------------------
-// const addDurationToDate = (
-//   date: Date,
-//   value: number,
-//   unit: "day" | "month" | "year"
-// ) => {
-//   const result = new Date(date);
-//   switch (unit) {
-//     case "day":
-//       result.setDate(result.getDate() + value);
-//       break;
-//     case "month":
-//       result.setMonth(result.getMonth() + value);
-//       break;
-//     case "year":
-//       result.setFullYear(result.getFullYear() + value);
-//       break;
-//     default:
-//       throw new Error(`Unsupported duration unit: ${unit}`);
-//   }
-//   return result;
-// };
-
-// // ---------------------- Create or Update Subscription ----------------------
-// export const createOrUpdateSubscription = async (
-//   userId: string,
-//   planId: string,
-//   durationValue: number,
-//   durationUnit: "day" | "month" | "year",
-//   trialType?: "free_sample" | "premium_sample"
-// ) => {
-//   try {
-//     const resolvedTrialType = trialType || "free_sample";
-//     const planType = resolvedTrialType === "free_sample" ? "Free" : "Premium";
-
-//     const endDate = addDurationToDate(new Date(), durationValue, durationUnit);
-
-//     // Deactivate previous active subscriptions
-//     await UserSubscription.updateMany(
-//       { user_id: new mongoose.Types.ObjectId(userId), is_active: true },
-//       { is_active: false }
-//     );
-
-//     const subscription = await UserSubscription.create({
-//       user_id: new mongoose.Types.ObjectId(userId),
-//       plan_id: new mongoose.Types.ObjectId(planId),
-//       plan_type: planType,
-//       trial_type: resolvedTrialType,
-//       start_date: new Date(),
-//       end_date: endDate,
-//       status: "new",
-//       auto_renew: false,
-//       is_active: true,
-//       is_deleted: false,
-//     });
-
-//     await subscription.populate([
-//       { path: "user_id", select: "firstname lastname email mobile" },
-//       { path: "plan_id" },
-//     ]);
-
-//     return subscription;
-//   } catch (err) {
-//     console.error("Error in createOrUpdateSubscription:", err);
-//     throw err;
-//   }
-// };
-
-
-// export const assignFreePlan = async (userId: string) => {
-//   try {
-//     /* ------------------------------
-//        1) GET FREE SUBSCRIPTION PLAN
-//     ------------------------------ */
-//     const freePlan: ISubscriptionPlan | null = await SubscriptionPlanModel.findOne({
-//       name: "Free",
-//       is_active: true,
-//       is_deleted: false,
-//     });
-
-//     if (!freePlan) throw new Error("Free plan not found");
-
-//     /* -------------------------------------
-//        2) CREATE SUBSCRIPTION (TRIAL = FREE)
-//     -------------------------------------- */
-//     const subscription = await createOrUpdateSubscription(
-//       userId,
-//       freePlan._id.toString(),
-//       freePlan.duration.value,
-//       freePlan.duration.unit,
-//       "free_sample"  // trial type
-//     );
-
-//     /* ------------------------------------------------
-//        3) CREATE PAYMENT ENTRY (REQUIRED FIELDS FIXED)
-//     ------------------------------------------------- */
-
-//     const payment = await UserSubscriptionPayment.create({
-//       user_id: new Types.ObjectId(userId),           // REQUIRED
-//       plan_id: freePlan._id,                         // REQUIRED
-//       user_subscription_id: subscription._id,        // REQUIRED
-
-//       amount: 0,                                     // Free → always 0
-//       currency: freePlan.currency || "INR",          // or your default currency
-//       payment_method: "system",                      // REQUIRED
-//       transaction_id: `FREE-${Date.now()}`,          // REQUIRED
-//       order_id: `FREE-${Date.now()}`,                // REQUIRED
-
-//       payment_status: "success",                     // REQUIRED
-//       type: "new",                                   // MUST match model enum → free ❌ not allowed
-
-//       payment_date: new Date(),
-
-//       metadata: {
-//         note: "Free plan auto-assigned during registration"
-//       }
-//     });
-
-//     /* -------------------------------------
-//        4) RETURN SUBSCRIPTION + PAYMENT
-//     -------------------------------------- */
-//     return { subscription, payment };
-
-//   } catch (err) {
-//     console.error("Failed to assign Free plan:", err);
-//     throw err;
-//   }
-// };
-
-// // ---------------------- Register User ----------------------
-// export const registerUser = async (req: Request, res: Response) => {
-//   try {
-//     let { title, firstname, lastname, email, password, mobile, termsAccepted } = req.body;
-
-//     // ---------------- VALIDATIONS ----------------
-//     if (!title || !["Mr", "Mrs"].includes(title))
-//       return res.status(400).json({ message: "Title must be 'Mr' or 'Mrs'" });
-
-//     if (!firstname || !lastname || !email || !password || !mobile)
-//       return res.status(400).json({ message: "All fields are required" });
-
-//     if (termsAccepted !== true)
-//       return res.status(400).json({ message: "You must accept the terms and conditions" });
-
-//     email = email.trim().toLowerCase();
-//     mobile = mobile.trim();
-
-//     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
-//       return res.status(400).json({ message: "Invalid email format" });
-
-//     if (!/^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).{8,128}$/.test(password))
-//       return res.status(400).json({
-//         message: "Password must be 8-128 chars, include 1 uppercase, 1 number, and 1 special character",
-//       });
-
-//     const existingUser = await User.findOne({ email });
-//     if (existingUser) return res.status(400).json({ message: "Email already exists" });
-
-//     const hashedPassword = await bcrypt.hash(password, 10);
-
-//     const newUser = await User.create({
-//       title,
-//       firstname,
-//       lastname,
-//       email,
-//       password: hashedPassword,
-//       mobile,
-//       role: "user",
-//       isTermsAccepted: termsAccepted,
-//     });
-
-//     // ------------------- Assign Free Plan & Record Payment -------------------
-//     let subscription;
-//     try {
-//       subscription = await assignFreePlan(newUser._id.toString());
-//     } catch (err: any) {
-//       console.log("Free Plan assignment failed:", err.message);
-//       return res.status(500).json({ message: "Free plan assignment failed", error: err.message });
-//     }
-
-//     // ------------------- JWT TOKEN -------------------
-//     const token = generateToken(newUser._id.toString(), newUser.role);
-
-//     // ------------------- SEND EMAIL -------------------
-//     const html = `
-//       <div style="font-family: sans-serif; max-width:600px; margin:auto; padding:30px; border-radius:12px; background:#f7f9fc;">
-//         <div style="text-align:center;">
-//           <h1 style="color:#140084; font-size:28px;">Welcome, ${newUser.firstname}!</h1>
-//           <p style="color:#555;">Your account has been successfully created.</p>
-//           <a href="${process.env.FRONTEND_URL}/signin" style="display:inline-block; background:#140084;color:#fff;padding:14px 28px;text-decoration:none;border-radius:8px;font-weight:bold;margin-top:20px;">Sign In</a>
-//         </div>
-//       </div>
-//     `;
-
-//     sendEmail({ to: newUser.email, subject: "Welcome!", html }).catch(err =>
-//       console.error("Email error:", err?.message)
-//     );
-
-//     // ------------------- RESPONSE -------------------
-//     res.cookie("token", token, {
-//       httpOnly: true,
-//       secure: false,
-//       sameSite: "lax",
-//       maxAge: JWT_EXPIRES,
-//     }).status(201).json({
-//       message: "User registered successfully. Free Plan assigned.",
-//       user: {
-//         id: newUser._id,
-//         title: newUser.title,
-//         firstname: newUser.firstname,
-//         lastname: newUser.lastname,
-//         email: newUser.email,
-//         mobile: newUser.mobile,
-//         role: newUser.role,
-//       },
-//       subscription,
-//       token,
-//     });
-//   } catch (error: any) {
-//     console.error("Registration error:", error?.message);
-//     res.status(500).json({ message: "Server error during registration" });
-//   }
-// };
-
 
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import type { Request, Response } from "express";
 import mongoose, { Types } from "mongoose";
-
 import SubscriptionPlanModel from "../models/subscriptionPlan.model";
-import User, { IUser } from "../models/userModel"; //  Import IUser
+import { userSubscriptionService } from "@/services/userSubscriptionService";
+
+import User, { IUser } from "../models/userModel"; 
 import UserSubscription from "../models/userSubscriptionModel";
 import UserSubscriptionPayment from "../models/userSubscriptionPaymentModel";
 import { sendEmail } from "../utils/emails";
@@ -297,29 +52,40 @@ const addDurationToDate = (
   return result;
 };
 
-/* ------------------------------------------------------------------
-   CREATE OR UPDATE SUBSCRIPTION
------------------------------------------------------------------- */
+
+
+
+
 export const createOrUpdateSubscription = async (
   userId: string,
   planId: string,
   durationValue: number,
   durationUnit: "day" | "month" | "year",
-  trialType?: "free_sample" | "premium_sample"
+  trialType?: "free_sample" | "premium_sample",
+  status: "new" | "upgrade" | "downgrade" = "new"
 ) => {
   try {
     const resolvedTrialType = trialType || "free_sample";
     const planType = resolvedTrialType === "free_sample" ? "Free" : "Premium";
 
+    // Get plan details (for price)
+  const plan = await SubscriptionPlanModel.findById(planId);
+if (!plan) throw new Error("Subscription plan not found");
+
+
     const endDate = addDurationToDate(new Date(), durationValue, durationUnit);
 
-    // Deactivate old active subscriptions
+    // -----------------------------------------------
+    // 1️⃣ Deactivate all old active subscriptions
+    // -----------------------------------------------
     await UserSubscription.updateMany(
       { user_id: new Types.ObjectId(userId), is_active: true },
       { is_active: false }
     );
 
-    // Create new subscription
+    // -----------------------------------------------
+    // 2️⃣ Create new subscription entry
+    // -----------------------------------------------
     const subscription = await UserSubscription.create({
       user_id: new Types.ObjectId(userId),
       plan_id: new Types.ObjectId(planId),
@@ -327,23 +93,53 @@ export const createOrUpdateSubscription = async (
       trial_type: resolvedTrialType,
       start_date: new Date(),
       end_date: endDate,
-      status: "new",
+      status,                     // new | upgrade | downgrade
       auto_renew: false,
       is_active: true,
       is_deleted: false,
     });
 
+    // -----------------------------------------------
+    // 3️⃣ Create payment entry for this subscription
+    // -----------------------------------------------
+    await UserSubscriptionPayment.create({
+      user_id: new Types.ObjectId(userId),
+      plan_id: new Types.ObjectId(planId),
+      user_subscription_id: subscription._id,
+
+      amount: planType === "Free" ? 0 : plan.price,   // FREE → 0
+      currency: "INR",
+      payment_method: "system",
+
+      transaction_id: `${status.toUpperCase()}-${Date.now()}`,
+      order_id: `${status.toUpperCase()}-${Date.now()}`,
+
+      payment_status: "success",
+      payment_date: new Date(),
+      type: status,                                   // store correct type
+
+      metadata: {
+        note: `Auto-generated for ${status} subscription`,
+      },
+    });
+
+    // -----------------------------------------------
+    // 4️⃣ Populate and return subscription
+    // -----------------------------------------------
     await subscription.populate([
       { path: "user_id", select: "firstname lastname email mobile" },
       { path: "plan_id" },
     ]);
 
     return subscription;
+
   } catch (err) {
     console.error("Error creating/updating subscription:", err);
     throw err;
   }
 };
+
+
 
 /* ------------------------------------------------------------------
    ASSIGN FREE PLAN (during registration)
@@ -358,132 +154,22 @@ export const assignFreePlan = async (userId: string) => {
 
     if (!freePlan) throw new Error("Free plan not found!");
 
+    // createOrUpdateSubscription NOW auto-creates payment entry
     const subscription = await createOrUpdateSubscription(
       userId,
       freePlan._id.toString(),
       freePlan.duration.value,
       freePlan.duration.unit,
-      "free_sample"
+      "free_sample",
+      "new"
     );
 
-    const payment = await UserSubscriptionPayment.create({
-      user_id: new Types.ObjectId(userId),
-      plan_id: freePlan._id,
-      user_subscription_id: subscription._id,
-      amount: 0,
-      currency: freePlan.currency || "INR",
-      payment_method: "system",
-      transaction_id: `FREE-${Date.now()}`,
-      order_id: `FREE-${Date.now()}`,
-      payment_status: "success",
-      type: "new",
-      payment_date: new Date(),
-      metadata: { note: "Free plan auto-assigned during registration" },
-    });
-
-    return { subscription, payment };
+    return { subscription };
   } catch (err) {
     console.error("Failed to assign free plan:", err);
     throw err;
   }
 };
-
-/* ------------------------------------------------------------------
-   REGISTER USER + AUTO FREE PLAN
------------------------------------------------------------------- */
-// export const registerUser = async (req: Request, res: Response) => {
-//   try {
-//     let { title, firstname, lastname, email, password, mobile, termsAccepted } =
-//       req.body;
-
-//     if (!title || !["Mr", "Mrs"].includes(title))
-//       return res.status(400).json({ message: "Title must be Mr or Mrs" });
-
-//     if (!firstname || !lastname || !email || !password || !mobile)
-//       return res.status(400).json({ message: "All fields are required" });
-
-//     if (termsAccepted !== true)
-//       return res.status(400).json({ message: "Please accept the terms" });
-
-//     email = email.trim().toLowerCase();
-//     mobile = mobile.trim();
-
-//     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
-//       return res.status(400).json({ message: "Invalid email format" });
-
-//     if (!/^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).{8,128}$/.test(password))
-//       return res.status(400).json({
-//         message:
-//           "Password must be 8+ chars, include 1 uppercase, 1 number & 1 special character",
-//       });
-
-//     const existingUser = await User.findOne({ email });
-//     if (existingUser)
-//       return res.status(400).json({ message: "Email already exists" });
-
-//     const hashedPassword = await bcrypt.hash(password, 10);
-
-//     const newUser: IUser = await User.create({
-//       title,
-//       firstname,
-//       lastname,
-//       email,
-//       password: hashedPassword,
-//       mobile,
-//       role: "user",
-//       isTermsAccepted: termsAccepted,
-//     });
-
-//     let subscription;
-//     try {
-//       subscription = await assignFreePlan(newUser._id.toString());
-//     } catch (err: any) {
-//       return res.status(500).json({
-//         message: "Free plan assignment failed",
-//         error: err.message,
-//       });
-//     }
-
-//     const token = generateToken(newUser._id.toString(), newUser.role);
-
-//     const html = `
-//       <div style="font-family:sans-serif;max-width:600px;margin:auto;padding:30px;background:#f7f9fc;border-radius:12px;">
-//         <h1 style="text-align:center;color:#140084;">Welcome, ${newUser.firstname}!</h1>
-//         <p style="text-align:center;">Your account has been created successfully.</p>
-//       </div>
-//     `;
-
-//     sendEmail({ to: newUser.email, subject: "Welcome!", html });
-
-//     res
-//       .cookie("token", token, {
-//         httpOnly: true,
-//         secure: false,
-//         sameSite: "lax",
-//         maxAge: JWT_EXPIRES,
-//       })
-//       .status(201)
-//       .json({
-//         message: "User registered successfully. Free plan assigned.",
-//         user: {
-//           id: newUser._id,
-//           title: newUser.title,
-//           firstname: newUser.firstname,
-//           lastname: newUser.lastname,
-//           email: newUser.email,
-//           mobile: newUser.mobile,
-//           role: newUser.role,
-//         },
-//         subscription,
-//         token,
-//       });
-//   } catch (error: any) {
-//     console.error("Registration error:", error.message);
-//     res.status(500).json({ message: "Server error during registration" });
-//   }
-// };
-
-
 
 
 
@@ -598,6 +284,12 @@ export const registerUser = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Server error during registration" });
   }
 };
+
+
+
+
+
+
 
 
 /* ------------------------------------------------------------------

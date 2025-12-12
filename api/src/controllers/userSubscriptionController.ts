@@ -4,93 +4,6 @@ import SubscriptionPlan from "@/models/subscriptionPlan.model";
 import { userSubscriptionService } from "@/services/userSubscriptionService";
 import { userSubscriptionPaymentService } from "@/services/userSubscriptionPaymentService";
 
-// ====================== GET ALL USER SUBSCRIPTIONS ======================
-// export const getUserSubscriptions = async (req: Request, res: Response) => {
-//   try {
-//     const search = String(req.query.search || "").trim();
-//     const page = Math.max(Number(req.query.page) || 1, 1);
-//     const limit = Math.max(Number(req.query.limit) || 10, 1);
-//     const skip = (page - 1) * limit;
-
-//     // Search query
-//     const userSearchQuery: Record<string, unknown> = {
-//       role: { $ne: "admin" },
-//       ...(search
-//         ? {
-//             $or: [
-//               { firstname: { $regex: search, $options: "i" } },
-//               { lastname: { $regex: search, $options: "i" } },
-//               { email: { $regex: search, $options: "i" } },
-//             ],
-//           }
-//         : {}),
-//     };
-
-//     // Count total
-//     const totalUsers = await User.countDocuments(userSearchQuery);
-
-//     // Fetch paginated users
-//     const users = await User.find(userSearchQuery)
-//       .skip(skip)
-//       .limit(limit)
-//       .select("-password -resetPasswordToken -resetPasswordExpires")
-//       .lean();
-
-//     // Get free plan
-//     const freePlan = await SubscriptionPlan.findOne({ name: "Free", is_active: true });
-//     if (!freePlan) {
-//       return res.status(500).json({
-//         success: false,
-//         message: "Free plan not found. Please create a plan with name 'Free' in DB.",
-//       });
-//     }
-
-//     // Map users to subscriptions
-//     const subscriptions = await Promise.all(
-//       users.map(async (user) => {
-//         let subscription = await userSubscriptionService.getByUserId(user._id.toString());
-
-//         // Auto-assign free plan
-//         if (!subscription) {
-//           try {
-//             subscription = await userSubscriptionService.createOrUpdateSubscription(
-//               user._id.toString(),
-//               freePlan._id.toString(),
-//               freePlan.duration.value,
-//               freePlan.duration.unit as "day" | "month" | "year",
-//               "free_sample"
-//             );
-//           } catch (error) {
-//             console.error(`Failed to assign Free plan to user ${user._id}`, error);
-//           }
-//         }
-
-//         if (subscription) {
-//           subscription = await subscription.populateFull();
-//         }
-
-//         return {
-//           user,
-//           subscription,
-//           status: subscription?.status || "new",
-//           trial_type: subscription?.trial_type || null,
-//         };
-//       })
-//     );
-
-//     return res.status(200).json({
-//       success: true,
-//       subscriptions,
-//       total: totalUsers,
-//       page,
-//       limit,
-//       totalPages: Math.ceil(totalUsers / limit),
-//     });
-//   } catch (error) {
-//     console.error("Get subscriptions error:", error);
-//     return res.status(500).json({ success: false, message: "Internal server error" });
-//   }
-// };
 
 
 
@@ -189,22 +102,8 @@ export const getUserSubscriptions = async (req: Request, res: Response) => {
 };
 
 
-// ====================== GET SUBSCRIPTION BY ID ======================
-// export const getUserSubscriptionById = async (req: Request, res: Response) => {
-//   try {
-//     const { id } = req.params;
 
-//     const subscription = await userSubscriptionService.getById(id);
-//     if (!subscription) {
-//       return res.status(404).json({ success: false, message: "Subscription not found" });
-//     }
 
-//     return res.json({ success: true, subscription });
-//   } catch (error) {
-//     console.error("Get subscription by ID error:", error);
-//     return res.status(500).json({ success: false, message: "Internal server error" });
-//   }
-// };
 
 export const getUserSubscriptionById = async (req: Request, res: Response) => {
   try {
