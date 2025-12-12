@@ -86,7 +86,7 @@ app.use(
 
 // API Routes
 app.use("/api/auth", authRoutes);
-app.use("/api/profile", profileRoutes);
+app.use("/api", profileRoutes);
 app.use("/api", clusterRoutes);
 app.use("/api", topicRoutes);
 app.use("/api", articleRoutes);

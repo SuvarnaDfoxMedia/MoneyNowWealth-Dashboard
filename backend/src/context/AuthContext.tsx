@@ -168,9 +168,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const refreshUser = async () => {
     try {
+<<<<<<< HEAD
       
       const res = await axios.get(`${backendUrl}/get-profile`, { withCredentials: true });
       setUser(res.data.user || res.data);
+=======
+
+      
+      const res = await axios.get(`${backendUrl}/get-profile`, { withCredentials: true });
+      setUser(res.data.user || res.data);
+
+      const res = await axios.get(`${backendUrl}/profile`, { withCredentials: true });
+      const data = res.data.user || res.data;
+
+      const [firstname = "", lastname = ""] = data.name ? data.name.split(" ") : ["", ""];
+
+      setUser({
+        ...data,
+        firstname,
+        lastname,
+     
+>>>>>>> 37ba044bf6b1c99355e1966652d5c6034780249c
     } catch {
       clearAuth();
     }
@@ -205,8 +223,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const init = async () => {
+<<<<<<< HEAD
       
       await refreshUser();
+=======
+
+      
+      await refreshUser();
+     
+>>>>>>> 37ba044bf6b1c99355e1966652d5c6034780249c
       setLoading(false);
     };
     init();
