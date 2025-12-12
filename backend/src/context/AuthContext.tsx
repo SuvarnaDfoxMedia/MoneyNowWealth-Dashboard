@@ -33,6 +33,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const refreshUser = async () => {
     try {
+      
       const res = await axios.get(`${backendUrl}/get-profile`, { withCredentials: true });
       setUser(res.data.user || res.data);
     } catch {
@@ -70,11 +71,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const init = async () => {
       
-      //await refreshUser();
+      await refreshUser();
       setLoading(false);
     };
     init();
   }, []);
+
+  
 
   return (
     <AuthContext.Provider value={{ user, loading, login, logout, refreshUser }}>
