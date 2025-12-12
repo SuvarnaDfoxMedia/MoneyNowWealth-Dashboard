@@ -32,6 +32,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   /* ------------------------------ REFRESH USER ------------------------------ */
   const refreshUser = async () => {
     try {
+
+      
+      const res = await axios.get(`${backendUrl}/get-profile`, { withCredentials: true });
+      setUser(res.data.user || res.data);
+
       const res = await axios.get(`${backendUrl}/profile`, { withCredentials: true });
       const data = res.data.user || res.data;
 
@@ -41,7 +46,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         ...data,
         firstname,
         lastname,
-      });
+     
     } catch {
       try {
         const res = await axios.get(`${backendUrl}/get-profile`, { withCredentials: true });
@@ -93,11 +98,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   /* ------------------------------ INITIAL LOAD ------------------------------ */
   useEffect(() => {
     const init = async () => {
-      // await refreshUser(); // Uncomment if you want to fetch user on app load
+
+      
+      await refreshUser();
+     
       setLoading(false);
     };
     init();
   }, []);
+
+  
 
   return (
     <AuthContext.Provider value={{ user, loading, login, logout, refreshUser }}>
