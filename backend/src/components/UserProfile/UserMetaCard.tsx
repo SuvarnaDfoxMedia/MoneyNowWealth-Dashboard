@@ -118,15 +118,16 @@ export default function UserMetaCard() {
         withCredentials: true,
         headers: { "Content-Type": "multipart/form-data" },
       });
+     toast.success(res.data.message);
 
-      await refreshUser();
-      toast.success(res.data.message || "Profile updated successfully!");
+  await refreshUser();
+  closeModal();
 
-      if (profileImage && res.data.user?.profileImage) {
-        setImagePreview(`${imageUrl}${res.data.user.profileImage}?v=${Date.now()}`);
-      }
+if (profileImage && res.data.user.profileImage) {
+  setImagePreview(`${imageUrl}${res.data.user.profileImage}?v=${Date.now()}`);
+}
 
-      closeModal();
+      //closeModal();
     } catch (err: any) {
       if (err.response?.data?.errors) {
         const fieldErrors: Record<string, string> = {};
@@ -141,6 +142,10 @@ export default function UserMetaCard() {
       setLoading(false);
     }
   };
+
+
+
+
 
   const inputClass = (field: string) =>
     `w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
