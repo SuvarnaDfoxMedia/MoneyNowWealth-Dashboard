@@ -59,13 +59,15 @@ import CustomerHistory from "./components/CustomerHistory";
 
 export default function App() {
   return (
+    <>
+      <Toaster position="top-right" reverseOrder={false} />
     <AuthProvider>
       <Router>
         <ScrollToTop />
-        <Toaster position="top-right" reverseOrder={false} />
         <AppRoutes />
       </Router>
     </AuthProvider>
+    </>
   );
 }
 
