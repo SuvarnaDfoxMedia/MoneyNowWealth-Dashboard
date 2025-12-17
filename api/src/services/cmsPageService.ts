@@ -1,7 +1,6 @@
 import CmsPage, { type ICmsPage } from "../models/cmsPageModel";
 
 // ===============================
-// 🔥 Dynamic Server-Side Pagination Service
 // ===============================
 export const getPages = async (query: any) => {
   const {

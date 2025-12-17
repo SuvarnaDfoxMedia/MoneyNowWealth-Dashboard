@@ -92,7 +92,7 @@ const AppSidebar: React.FC = () => {
       icon: <FiSettings />,
       roles: ["admin"],
       subItems: [
-        { name: "Cluster", path: `/${role}/cluster`, roles: ["admin", "editor"] },
+        // { name: "Cluster", path: `/${role}/cluster`, roles: ["admin", "editor"] },
       ],
     },
   ];

@@ -80,7 +80,7 @@ body {
   border-right: 1px solid #d1d5db !important;
   padding: 6px 12px !important;
   background-color: #ffffff !important;
-  height: 60px !important; /* ← updated */
+  height: 44px !important; /* ← updated */
 }
 
 .iti__country-list {
@@ -90,17 +90,17 @@ body {
 .iti input {
   width: 100% !important;
   padding-left: 90px !important; 
-  height: 60px !important; /* ← updated */
+  height: 44px !important; /* ← updated */
   border-radius: 0 !important;
   border: 1px solid #d1d5db !important;
 }
 
 .iti__selected-flag {
-  height: 60px !important; /* ← updated */
+  height: 44px !important; /* ← updated */
 }
 
 .iti__flag-container {
   border: 1px solid #E8E8E8 !important;
   border-right: none !important;
-  height: 40px !important; /* already correct */
+  height: 44px !important; /* already correct */
 }

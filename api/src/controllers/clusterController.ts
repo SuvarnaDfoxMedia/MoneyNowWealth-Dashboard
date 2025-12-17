@@ -102,10 +102,29 @@ export const addCluster = async (req: MulterRequest, res: Response) => {
 --------------------------------------------------- */
 export const updateCluster = async (req: MulterRequest, res: Response) => {
   try {
-    const updatedData: any = { ...req.body };
-    if (req.file) updatedData.thumbnail = req.file.filename;
+    const { id } = req.params;
 
-    const cluster = await clusterService.updateCluster(req.params.id, updatedData);
+    const updatedData: any = {
+      ...req.body,
+      title: req.body.title?.trim(),
+    };
+
+    // 🚫 IMPORTANT: remove thumbnail from req.body
+    delete updatedData.thumbnail;
+
+    // ✅ Only update thumbnail if a new file is uploaded
+    if (req.file) {
+      updatedData.thumbnail = req.file.filename;
+    }
+
+    const cluster = await clusterService.updateCluster(id, updatedData);
+
+    if (!cluster) {
+      return res.status(404).json({
+        success: false,
+        message: "Cluster not found",
+      });
+    }
 
     return res.status(200).json({
       success: true,
@@ -113,6 +132,7 @@ export const updateCluster = async (req: MulterRequest, res: Response) => {
       cluster,
     });
   } catch (error: any) {
+    console.error("Update cluster failed:", error);
     return res.status(500).json({
       success: false,
       message: error.message || "Failed to update cluster",

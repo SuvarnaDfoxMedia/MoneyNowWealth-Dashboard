@@ -249,6 +249,67 @@ export const getTopicById = async (req: Request, res: Response) => {
   }
 };
 
+// export const addTopic = async (req: Request, res: Response) => {
+//   try {
+//     const {
+//       cluster_id,
+//       title,
+//       slug,
+//       keywords,
+//       summary,
+//       status,
+//       author,
+//       publish_date,
+//       read_time_minutes,
+//       tags,
+//       access_type,
+//       is_active,
+//     } = req.body;
+
+//     if (!cluster_id || !title || !slug) {
+//       return res
+//         .status(400)
+//         .json({ success: false, message: "cluster_id, title, and slug are required" });
+//     }
+
+//     const topicData: any = {
+//       cluster_id,
+//       title,
+//       slug,
+//       keywords,
+//       summary,
+//       author,
+//       read_time_minutes,
+//       tags,
+//       access_type: access_type || "free",
+//       status: ["draft", "published", "archived"].includes(status) ? status : "draft",
+//       is_active: typeof is_active === "number" ? is_active : 0,
+//     };
+
+//     if (publish_date) topicData.publish_date = new Date(publish_date);
+
+//     const topic = await topicService.create(topicData);
+//     res.status(201).json({ success: true, topic });
+//   } catch (error: any) {
+//     console.error("Add topic error:", error);
+//     if (error?.code === 11000) {
+//       const dupKey = error.keyValue
+//         ? Object.keys(error.keyValue)[0]
+//         : "field";
+//       return res.status(400).json({
+//         success: false,
+//         message: `${dupKey} already exists`,
+//         field: dupKey,
+//       });
+//     }
+//     res
+//       .status(500)
+//       .json({ success: false, message: error.message || "Server error" });
+//   }
+// };
+
+import { nanoid } from "nanoid";
+
 export const addTopic = async (req: Request, res: Response) => {
   try {
     const {
@@ -267,46 +328,63 @@ export const addTopic = async (req: Request, res: Response) => {
     } = req.body;
 
     if (!cluster_id || !title || !slug) {
-      return res
-        .status(400)
-        .json({ success: false, message: "cluster_id, title, and slug are required" });
+      return res.status(400).json({
+        success: false,
+        message: "cluster_id, title, and slug are required",
+      });
     }
 
+    const topic_code = `TOPIC-${Date.now()}-${nanoid(6)}`;
+
     const topicData: any = {
+      topic_code, 
       cluster_id,
       title,
       slug,
-      keywords,
+      keywords: Array.isArray(keywords) ? keywords : [],
       summary,
       author,
       read_time_minutes,
-      tags,
+      tags: Array.isArray(tags) ? tags : [],
       access_type: access_type || "free",
-      status: ["draft", "published", "archived"].includes(status) ? status : "draft",
+      status: ["draft", "published", "archived"].includes(status)
+        ? status
+        : "draft",
       is_active: typeof is_active === "number" ? is_active : 0,
     };
 
-    if (publish_date) topicData.publish_date = new Date(publish_date);
+    if (publish_date) {
+      topicData.publish_date = new Date(publish_date);
+    }
 
     const topic = await topicService.create(topicData);
-    res.status(201).json({ success: true, topic });
+
+    res.status(201).json({
+      success: true,
+      topic,
+    });
   } catch (error: any) {
     console.error("Add topic error:", error);
+
     if (error?.code === 11000) {
       const dupKey = error.keyValue
         ? Object.keys(error.keyValue)[0]
         : "field";
+
       return res.status(400).json({
         success: false,
         message: `${dupKey} already exists`,
         field: dupKey,
       });
     }
-    res
-      .status(500)
-      .json({ success: false, message: error.message || "Server error" });
+
+    res.status(500).json({
+      success: false,
+      message: error.message || "Server error",
+    });
   }
 };
+
 
 export const updateTopic = async (req: Request, res: Response) => {
   try {

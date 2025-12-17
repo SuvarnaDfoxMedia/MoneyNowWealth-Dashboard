@@ -21,6 +21,7 @@
     "mongoose": "^8.14.0",
     "mongoose-sequence": "^6.0.1",
     "multer": "^2.0.2",
+    "nanoid": "^5.1.6",
     "node-cron": "^4.2.1",
     "nodemailer": "^7.0.10",
     "sharp": "^0.34.5",
