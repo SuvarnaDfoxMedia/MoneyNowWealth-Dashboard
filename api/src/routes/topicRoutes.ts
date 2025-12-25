@@ -69,6 +69,7 @@ import multer from "multer";
 
 import {
   getTopics,
+  getTopicList,
   getTopicById,
   addTopic,
   updateTopic,
@@ -76,6 +77,8 @@ import {
   toggleTopicStatus,
   getPublishedClustersTopicsArticles,
   getPublishedTopicWithArticlesByIdAgg,
+  getPublishedTopicBySlug,
+  getPublishedTopicByClusterAndSlug,
 } from "../controllers/topicController";
 
 import { roleFromUrl } from "../middlewares/roleUrlMiddleware";
@@ -86,12 +89,18 @@ const upload = multer(); // parses multipart/form-data
 /* -------------------- PUBLIC ROUTES -------------------- */
 // List all topics
 router.get("/topic", getTopics);
+router.get("/topic-list", getTopicList);
 
 // Get clusters -> topics -> articles
 router.get("/topic/published", getPublishedClustersTopicsArticles);
 
 // Get a published topic with its articles by ID (aggregation)
 router.get("/topic/published/:id", getPublishedTopicWithArticlesByIdAgg);
+
+router.get("/topic/published/slug/:slug", getPublishedTopicBySlug);
+
+router.get("/topic/published/cluster/:clusterSlug/slug/:slug", getPublishedTopicByClusterAndSlug);
+
 
 // Get a single topic by ID
 router.get("/topic/:id", getTopicById);

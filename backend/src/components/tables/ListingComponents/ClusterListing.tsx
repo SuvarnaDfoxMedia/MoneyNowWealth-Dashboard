@@ -6,18 +6,11 @@
 // import React, { useEffect, useState } from "react";
 // import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 // import { toast } from "react-hot-toast";
-// import {
-//   FiEdit,
-//   FiTrash2,
-//   FiMoreVertical,
-//   FiPlus,
-//   FiImage,
-// } from "react-icons/fi";
+// import { FiEdit, FiTrash2, FiMoreVertical, FiPlus, FiImage } from "react-icons/fi";
 // import { createPortal } from "react-dom";
 // import { DataTable, TableColumn } from "../../PagesComponent/DataTable";
 // import { useCommonCrud } from "../../../hooks/useCommonCrud";
 // import { useDataTableStore } from "../../../store/dataTableStore";
-// import { axiosApi } from "../../../api/axios"; // <- use axiosApi
 
 // interface Cluster {
 //   _id: string;
@@ -44,16 +37,14 @@
 //     setSort,
 //   } = useDataTableStore();
 
-//   /* ------------------- Restore URL → Zustand ------------------- */
+//   /* ---------------- Restore URL → Store ---------------- */
 //   useEffect(() => {
-//     const urlPage = Number(searchParams.get("page")) || 1;
-//     const urlLimit = Number(searchParams.get("limit")) || 10;
-//     setPage(urlPage);
-//     setRecordsPerPage(urlLimit);
+//     setPage(Number(searchParams.get("page")) || 1);
+//     setRecordsPerPage(Number(searchParams.get("limit")) || 10);
 //   }, []);
 
-//   /* ------------------- Fetch Data (CRUD Hook) ------------------- */
-//   const { data, extractList, refetch, deleteRecord, isLoading } =
+//   /* ---------------- CRUD Hook ---------------- */
+//   const { data, extractList, refetch, deleteRecord, isLoading, toggleStatus } =
 //     useCommonCrud<Cluster>({
 //       role,
 //       module: "cluster",
@@ -70,10 +61,10 @@
 //     setClusters(extractList);
 //   }, [extractList]);
 
-//   const totalRecords = data.total ?? 0;
+//   const totalRecords = data?.total ?? 0;
 //   const totalPages = Math.max(Math.ceil(totalRecords / recordsPerPage), 1);
 
-//   /* ------------------- Sync Zustand → URL ------------------- */
+//   /* ---------------- Sync Store → URL ---------------- */
 //   useEffect(() => {
 //     setSearchParams({
 //       page: String(page),
@@ -81,187 +72,138 @@
 //     });
 //   }, [page, recordsPerPage]);
 
-//   /* ------------------- Debounced Refetch ------------------- */
+//   /* ---------------- Debounced Refetch ---------------- */
 //   useEffect(() => {
-//     const timer = setTimeout(() => refetch(), 300);
+//     const timer = setTimeout(refetch, 300);
 //     return () => clearTimeout(timer);
-//   }, [searchValue, sortField, sortOrder, page]);
+//   }, [page, recordsPerPage, searchValue, sortField, sortOrder]);
 
-//   /* ------------------- Dropdown & Delete Modal ------------------- */
+//   /* ---------------- Dropdown & Delete ---------------- */
 //   const [deleteModalId, setDeleteModalId] = useState<string | null>(null);
 //   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 //   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
 
-//   const handleDropdownClick = (
-//     e: React.MouseEvent<HTMLButtonElement>,
-//     id: string
-//   ) => {
-//     const rect = e.currentTarget.getBoundingClientRect();
+//   const handleDropdownClick = (e: React.MouseEvent, id: string) => {
+//     e.stopPropagation();
+//     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
 //     setDropdownPos({
 //       top: rect.bottom + window.scrollY,
-//       left: rect.right - 144,
+//       left: rect.right - 150,
 //     });
 //     setOpenDropdownId((prev) => (prev === id ? null : id));
 //   };
 
-//   /* ------------------- Toggle Status ------------------- */
-//   const handleToggleStatus = async (id: string, currentStatus: number) => {
-//     const newStatus = currentStatus === 1 ? 0 : 1;
+//   /* ---------------- Toggle Status ---------------- */
+//   const handleToggleStatus = async (id: string, current: number) => {
+//     const next = current ? 0 : 1;
 
-//     // optimistic UI update
 //     setClusters((prev) =>
-//       prev.map((c) => (c._id === id ? { ...c, is_active: newStatus } : c))
+//       prev.map((c) => (c._id === id ? { ...c, is_active: next } : c))
 //     );
 
 //     try {
-//       const res = await axiosApi.patch<{ success: boolean; message: string }>(
-//         `/admin/cluster/change/${id}/status`,
-//         { is_active: newStatus } // send new status in request body
-//       );
-
-//       if (res.success) {
-//         toast.success(res.message || "Status updated");
-//       } else {
-//         throw new Error(res.message || "Failed to update status");
-//       }
-//     } catch (err: any) {
-//       toast.error(err.message || "Failed to update status");
-
-//       // revert on error
+//       await toggleStatus(id, next === 1);
+//     } catch {
+//       toast.error("Failed to update status");
 //       setClusters((prev) =>
-//         prev.map((c) =>
-//           c._id === id ? { ...c, is_active: currentStatus } : c
-//         )
+//         prev.map((c) => (c._id === id ? { ...c, is_active: current } : c))
 //       );
 //     }
 //   };
 
-//   /* ------------------- Delete Record ------------------- */
+//   /* ---------------- Delete ---------------- */
 //   const handleDelete = async () => {
 //     if (!deleteModalId) return;
 
 //     const res = await deleteRecord(deleteModalId);
-
-//     if (res?.success) {
-//       toast.success("Cluster deleted");
-//       refetch();
-//     }
+//     res?.success ? toast.success("Cluster deleted") : toast.error("Delete failed");
 
 //     setDeleteModalId(null);
+//     refetch();
 //   };
 
-//   /* ------------------- Dropdown Component ------------------- */
-//   const Dropdown = ({
-//     clusterId,
-//     top,
-//     left,
-//   }: {
-//     clusterId: string;
-//     top: number;
-//     left: number;
-//   }) =>
+//   /* ---------------- Dropdown Portal ---------------- */
+//   const Dropdown = ({ id }: { id: string }) =>
 //     createPortal(
 //       <div
-//         className="absolute bg-white border rounded-xl shadow-lg z-50"
-//         style={{ top, left, width: "9rem" }}
-//       >
-//         <button
-//           onClick={() => {
-//             navigate(`/${role}/cluster/edit/${clusterId}`);
-//             setOpenDropdownId(null);
-//           }}
-//           className="flex px-4 py-2 gap-2 w-full hover:bg-indigo-50"
-//         >
-//           <FiEdit /> Edit
-//         </button>
+//   className="absolute bg-white border rounded-xl shadow-lg z-50"
+//   style={{ top: dropdownPos.top, left: dropdownPos.left, width: "9rem" }}
+// >
+//   <button
+//     onClick={() => navigate(`/${role}/cluster/edit/${id}`)}
+//     className="flex items-center gap-2 px-4 py-2 hover:bg-indigo-50 w-full"
+//   >
+//     <FiEdit className="text-lg" />
+//     <span>Edit</span>
+//   </button>
 
-//         <button
-//           onClick={() => {
-//             setDeleteModalId(clusterId);
-//             setOpenDropdownId(null);
-//           }}
-//           className="flex px-4 py-2 gap-2 w-full text-red-600 hover:bg-red-50"
-//         >
-//           <FiTrash2 /> Delete
-//         </button>
-//       </div>,
+//   <button
+//     onClick={() => setDeleteModalId(id)}
+//     className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 w-full"
+//   >
+//     <FiTrash2 className="text-lg" />
+//     <span>Delete</span>
+//   </button>
+// </div>,
 //       document.body
 //     );
 
-//   const API_BASE = import.meta.env.VITE_API_BASE;
+//   const API_BASE = import.meta.env.VITE_API_BASE?.replace("/api", "");
 
-//   /* ------------------- Table Columns ------------------- */
+//   /* ---------------- Columns ---------------- */
 //   const columns: TableColumn<Cluster>[] = [
-//     {
-//       key: "index",
-//       label: "#",
-//       render: (_row, idx) => (page - 1) * recordsPerPage + idx + 1,
-//     },
+//     { key: "index", label: "#", render: (_, i) => (page - 1) * recordsPerPage + i + 1 },
 //     {
 //       key: "thumbnail",
 //       label: "Thumbnail",
-//       render: (row) => {
-//         const imageUrl = row.thumbnail
-//           ? row.thumbnail.startsWith("http")
-//             ? row.thumbnail
-//             : `${API_BASE.replace("/api", "")}/uploads/thumbnail/${row.thumbnail}`
-//           : null;
-
-//         return imageUrl ? (
+//       render: (row) =>
+//         row.thumbnail ? (
 //           <img
+//             src={
+//               row.thumbnail.startsWith("http")
+//                 ? row.thumbnail
+//                 : `${API_BASE}/uploads/thumbnail/${row.thumbnail}`
+//             }
 //             className="w-14 h-14 object-cover rounded-lg border"
-//             src={imageUrl}
 //           />
 //         ) : (
-//           <div className="w-14 h-14 bg-gray-100 flex items-center justify-center text-gray-400 border rounded-lg">
-//             <FiImage size={20} />
+//           <div className="w-14 h-14 bg-gray-100 flex items-center justify-center border rounded-lg">
+//             <FiImage />
 //           </div>
-//         );
-//       },
+//         ),
 //     },
 //     { key: "title", label: "Title", sortable: true },
-
 //     {
 //       key: "description",
 //       label: "Description",
-//       render: (row) =>
-//         row.description ? row.description.slice(0, 60) + "..." : "-",
+//       render: (r) => (r.description ? r.description.slice(0, 60) + "…" : "-"),
 //     },
-
 //     {
 //       key: "is_active",
 //       label: "Status",
-//       render: (row) => (
+//       render: (r) => (
 //         <button
-//           onClick={() => handleToggleStatus(row._id, row.is_active)}
-//           className={`px-3 py-1 rounded-sm text-sm text-white ${
-//             row.is_active ? "bg-green-600" : "bg-gray-600"
+//           onClick={() => handleToggleStatus(r._id, r.is_active)}
+//           className={`px-3 py-1 rounded-sm text-white ${
+//             r.is_active ? "bg-green-600" : "bg-gray-600"
 //           }`}
 //         >
-//           {row.is_active ? "Active" : "Inactive"}
+//           {r.is_active ? "Active" : "Inactive"}
 //         </button>
 //       ),
 //     },
-
 //     {
 //       key: "actions",
 //       label: "Actions",
-//       render: (row) => (
+//       render: (r) => (
 //         <>
 //           <button
-//             onClick={(e) => handleDropdownClick(e, row._id)}
-//             className="p-2 hover:bg-gray-100 rounded-full"
+//             onClick={(e) => handleDropdownClick(e, r._id)}
+//             className="p-2 rounded-full hover:bg-gray-100"
 //           >
-//             <FiMoreVertical size={18} />
+//             <FiMoreVertical />
 //           </button>
-
-//           {openDropdownId === row._id && (
-//             <Dropdown
-//               clusterId={row._id}
-//               top={dropdownPos.top}
-//               left={dropdownPos.left}
-//             />
-//           )}
+//           {openDropdownId === r._id && <Dropdown id={r._id} />}
 //         </>
 //       ),
 //     },
@@ -271,11 +213,10 @@
 //     <div className="p-4 bg-gray-50 min-h-screen">
 //       <div className="flex justify-between mb-6">
 //         <h2 className="text-xl font-medium">Clusters</h2>
-
 //         {(role === "admin" || role === "editor") && (
 //           <button
 //             onClick={() => navigate(`/${role}/cluster/create`)}
-//             className="bg-[#043f79] text-white px-3 py-2 rounded-md shadow-md flex items-center gap-2"
+//             className="bg-[#043f79] text-white px-3 py-2 rounded-md flex items-center gap-2"
 //           >
 //             <FiPlus /> Add
 //           </button>
@@ -285,6 +226,7 @@
 //       <DataTable
 //         columns={columns}
 //         data={clusters}
+//         loading={isLoading}
 //         page={page}
 //         totalPages={totalPages}
 //         totalRecords={totalRecords}
@@ -295,32 +237,17 @@
 //         onSearchChange={setSearchValue}
 //         sortField={sortField}
 //         sortOrder={sortOrder}
-//         onSortChange={(field, order) => setSort(field, order)}
-//         loading={isLoading}
+//         onSortChange={setSort}
 //       />
 
-//       {/* Delete Modal */}
 //       {deleteModalId &&
 //         createPortal(
-//           <div className="fixed inset-0 bg-black/70 flex justify-center items-center z-[9999]">
-//             <div className="bg-white p-6 rounded-xl shadow-xl w-80">
-//               <h2 className="text-lg font-medium mb-4">Delete Cluster?</h2>
-//               <p className="text-sm text-gray-600 mb-6">
-//                 Are you sure you want to delete this cluster?
-//               </p>
-
+//           <div className="fixed inset-0 bg-black/70 z-[99999] flex items-center justify-center">
+//             <div className="bg-white p-6 rounded-xl w-80">
+//               <h3 className="text-lg mb-4">Delete Cluster?</h3>
 //               <div className="flex justify-end gap-3">
-//                 <button
-//                   onClick={() => setDeleteModalId(null)}
-//                   className="px-4 py-2 rounded bg-gray-200"
-//                 >
-//                   Cancel
-//                 </button>
-
-//                 <button
-//                   onClick={handleDelete}
-//                   className="px-4 py-2 rounded bg-red-600 text-white"
-//                 >
+//                 <button onClick={() => setDeleteModalId(null)}>Cancel</button>
+//                 <button onClick={handleDelete} className="bg-red-600 text-white px-4 py-2 rounded">
 //                   Delete
 //                 </button>
 //               </div>
@@ -335,10 +262,16 @@
 
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
-import { FiEdit, FiTrash2, FiMoreVertical, FiPlus, FiImage } from "react-icons/fi";
+import {
+  FiEdit,
+  FiTrash2,
+  FiMoreVertical,
+  FiPlus,
+  FiImage,
+} from "react-icons/fi";
 import { createPortal } from "react-dom";
 import { DataTable, TableColumn } from "../../PagesComponent/DataTable";
 import { useCommonCrud } from "../../../hooks/useCommonCrud";
@@ -347,7 +280,6 @@ import { useDataTableStore } from "../../../store/dataTableStore";
 interface Cluster {
   _id: string;
   title: string;
-  description?: string;
   thumbnail?: string;
   is_active: number;
 }
@@ -357,6 +289,7 @@ export default function ClusterListing() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  /* ---------------- Store ---------------- */
   const {
     page,
     recordsPerPage,
@@ -388,12 +321,8 @@ export default function ClusterListing() {
     });
 
   const [clusters, setClusters] = useState<Cluster[]>([]);
+  useEffect(() => setClusters(extractList), [extractList]);
 
-  useEffect(() => {
-    setClusters(extractList);
-  }, [extractList]);
-
-  /* ✅ FIXED TS ERROR */
   const totalRecords = data?.total ?? 0;
   const totalPages = Math.max(Math.ceil(totalRecords / recordsPerPage), 1);
 
@@ -411,18 +340,27 @@ export default function ClusterListing() {
     return () => clearTimeout(timer);
   }, [page, recordsPerPage, searchValue, sortField, sortOrder]);
 
-  /* ---------------- Dropdown & Delete ---------------- */
-  const [deleteModalId, setDeleteModalId] = useState<string | null>(null);
+  /* ---------------- Dropdown logic ---------------- */
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
-  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+
+  // ✅ OUTSIDE CLICK (use CLICK, not mousedown)
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
+        setOpenDropdownId(null);
+      }
+    };
+
+    document.addEventListener("click", handleOutsideClick);
+    return () => document.removeEventListener("click", handleOutsideClick);
+  }, []);
 
   const handleDropdownClick = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    setDropdownPos({
-      top: rect.bottom + window.scrollY,
-      left: rect.right - 150,
-    });
     setOpenDropdownId((prev) => (prev === id ? null : id));
   };
 
@@ -445,44 +383,30 @@ export default function ClusterListing() {
   };
 
   /* ---------------- Delete ---------------- */
+  const [deleteModalId, setDeleteModalId] = useState<string | null>(null);
+
   const handleDelete = async () => {
     if (!deleteModalId) return;
 
     const res = await deleteRecord(deleteModalId);
-    res?.success ? toast.success("Cluster deleted") : toast.error("Delete failed");
+    res?.success
+      ? toast.success("Cluster deleted")
+      : toast.error("Delete failed");
 
     setDeleteModalId(null);
+    setOpenDropdownId(null);
     refetch();
   };
-
-  /* ---------------- Dropdown Portal ---------------- */
-  const Dropdown = ({ id }: { id: string }) =>
-    createPortal(
-      <div
-        className="absolute bg-white border rounded-xl shadow-lg z-50"
-        style={{ top: dropdownPos.top, left: dropdownPos.left, width: "9rem" }}
-      >
-        <button
-          onClick={() => navigate(`/${role}/cluster/edit/${id}`)}
-          className="flex px-4 py-2 gap-2 hover:bg-indigo-50 w-full"
-        >
-          <FiEdit /> Edit
-        </button>
-        <button
-          onClick={() => setDeleteModalId(id)}
-          className="flex px-4 py-2 gap-2 text-red-600 hover:bg-red-50 w-full"
-        >
-          <FiTrash2 /> Delete
-        </button>
-      </div>,
-      document.body
-    );
 
   const API_BASE = import.meta.env.VITE_API_BASE?.replace("/api", "");
 
   /* ---------------- Columns ---------------- */
   const columns: TableColumn<Cluster>[] = [
-    { key: "index", label: "#", render: (_, i) => (page - 1) * recordsPerPage + i + 1 },
+    {
+      key: "index",
+      label: "#",
+      render: (_, i) => (page - 1) * recordsPerPage + i + 1,
+    },
     {
       key: "thumbnail",
       label: "Thumbnail",
@@ -504,11 +428,6 @@ export default function ClusterListing() {
     },
     { key: "title", label: "Title", sortable: true },
     {
-      key: "description",
-      label: "Description",
-      render: (r) => (r.description ? r.description.slice(0, 60) + "…" : "-"),
-    },
-    {
       key: "is_active",
       label: "Status",
       render: (r) => (
@@ -526,15 +445,42 @@ export default function ClusterListing() {
       key: "actions",
       label: "Actions",
       render: (r) => (
-        <>
+        <div className="relative">
           <button
             onClick={(e) => handleDropdownClick(e, r._id)}
             className="p-2 rounded-full hover:bg-gray-100"
           >
             <FiMoreVertical />
           </button>
-          {openDropdownId === r._id && <Dropdown id={r._id} />}
-        </>
+
+          {openDropdownId === r._id && (
+            <div
+              ref={dropdownRef}
+              className="absolute right-0 top-full mt-2 w-36 bg-white border rounded-xl shadow-lg z-50"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => {
+                  navigate(`/${role}/cluster/edit/${r._id}`);
+                  setOpenDropdownId(null);
+                }}
+                className="flex items-center gap-2 px-4 py-2 hover:bg-indigo-50 w-full"
+              >
+                <FiEdit /> Edit
+              </button>
+
+              <button
+                onClick={() => {
+                  setDeleteModalId(r._id);
+                  setOpenDropdownId(null);
+                }}
+                className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 w-full"
+              >
+                <FiTrash2 /> Delete
+              </button>
+            </div>
+          )}
+        </div>
       ),
     },
   ];
@@ -543,6 +489,7 @@ export default function ClusterListing() {
     <div className="p-4 bg-gray-50 min-h-screen">
       <div className="flex justify-between mb-6">
         <h2 className="text-xl font-medium">Clusters</h2>
+
         {(role === "admin" || role === "editor") && (
           <button
             onClick={() => navigate(`/${role}/cluster/create`)}
@@ -577,7 +524,10 @@ export default function ClusterListing() {
               <h3 className="text-lg mb-4">Delete Cluster?</h3>
               <div className="flex justify-end gap-3">
                 <button onClick={() => setDeleteModalId(null)}>Cancel</button>
-                <button onClick={handleDelete} className="bg-red-600 text-white px-4 py-2 rounded">
+                <button
+                  onClick={handleDelete}
+                  className="bg-red-600 text-white px-4 py-2 rounded"
+                >
                   Delete
                 </button>
               </div>

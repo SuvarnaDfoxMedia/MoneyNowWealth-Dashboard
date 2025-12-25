@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { topicService } from "../services/topicService";
 import Topic from "../models/topicModel";
 import Cluster from "../models/clusterModel";
+import { nanoid } from "nanoid";
 
 type Request = express.Request;
 type Response = express.Response;
@@ -249,66 +250,112 @@ export const getTopicById = async (req: Request, res: Response) => {
   }
 };
 
-// export const addTopic = async (req: Request, res: Response) => {
-//   try {
-//     const {
-//       cluster_id,
-//       title,
-//       slug,
-//       keywords,
-//       summary,
-//       status,
-//       author,
-//       publish_date,
-//       read_time_minutes,
-//       tags,
-//       access_type,
-//       is_active,
-//     } = req.body;
 
-//     if (!cluster_id || !title || !slug) {
-//       return res
-//         .status(400)
-//         .json({ success: false, message: "cluster_id, title, and slug are required" });
-//     }
+export const getPublishedTopicBySlug = async (req: Request, res: Response) => {
+  try {
+    const { slug } = req.params;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-//     const topicData: any = {
-//       cluster_id,
-//       title,
-//       slug,
-//       keywords,
-//       summary,
-//       author,
-//       read_time_minutes,
-//       tags,
-//       access_type: access_type || "free",
-//       status: ["draft", "published", "archived"].includes(status) ? status : "draft",
-//       is_active: typeof is_active === "number" ? is_active : 0,
-//     };
+    const result = await Topic.aggregate([
+      {
+        $match: {
+          slug,
+          is_deleted: false,
+          status: "published",
+          publish_date: { $lte: today },
+        },
+      },
+      {
+        $lookup: {
+          from: "articles",
+          let: { topicId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$topic_id", "$$topicId"] },
+                    { $eq: ["$status", "published"] },
+                  ],
+                },
+              },
+            },
+          ],
+          as: "articles",
+        },
+      },
+    ]);
 
-//     if (publish_date) topicData.publish_date = new Date(publish_date);
+    if (!result.length) {
+      return res.status(404).json({ success: false });
+    }
 
-//     const topic = await topicService.create(topicData);
-//     res.status(201).json({ success: true, topic });
-//   } catch (error: any) {
-//     console.error("Add topic error:", error);
-//     if (error?.code === 11000) {
-//       const dupKey = error.keyValue
-//         ? Object.keys(error.keyValue)[0]
-//         : "field";
-//       return res.status(400).json({
-//         success: false,
-//         message: `${dupKey} already exists`,
-//         field: dupKey,
-//       });
-//     }
-//     res
-//       .status(500)
-//       .json({ success: false, message: error.message || "Server error" });
-//   }
-// };
+    res.json({
+      success: true,
+      topic: result[0],
+      articles: result[0].articles,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false });
+  }
+};
 
-import { nanoid } from "nanoid";
+
+// Controller
+export const getPublishedTopicByClusterAndSlug = async (req: Request, res: Response) => {
+  try {
+    const { clusterSlug, slug } = req.params;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const result = await Topic.aggregate([
+      {
+        $match: {
+          slug,
+          cluster_slug: clusterSlug, // <-- match cluster/category slug
+          is_deleted: false,
+          status: "published",
+          publish_date: { $lte: today },
+        },
+      },
+      {
+        $lookup: {
+          from: "articles",
+          let: { topicId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$topic_id", "$$topicId"] },
+                    { $eq: ["$status", "published"] },
+                  ],
+                },
+              },
+            },
+          ],
+          as: "articles",
+        },
+      },
+    ]);
+
+    if (!result.length) {
+      return res.status(404).json({ success: false, message: "Topic not found" });
+    }
+
+    res.json({
+      success: true,
+      topic: result[0],
+      articles: result[0].articles,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+
 
 export const addTopic = async (req: Request, res: Response) => {
   try {
@@ -488,5 +535,24 @@ export const restoreTopic = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error("Restore topic error:", error);
     res.status(500).json({ success: false, message: error.message || "Server error" });
+  }
+};
+
+
+
+export const getTopicList = async (_req: Request, res: Response) => {
+  try {
+    const topics = await topicService.getTopicList();
+
+    res.status(200).json({
+      success: true,
+      data: topics,
+    });
+  } catch (error) {
+    console.error("Get Topic List Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch topic list",
+    });
   }
 };

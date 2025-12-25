@@ -188,6 +188,8 @@
 // export default axiosInstance;
 
 
+
+
 import axios, { AxiosInstance } from "axios";
 import { refreshAuthUser, logoutAuth } from "../context/AuthContext";
 import { toast } from "react-hot-toast";
@@ -209,7 +211,6 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE;
 export const axiosInstance: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
-  // ❌ DO NOT set Content-Type here
   // Axios will automatically choose:
   // - application/json for normal objects
   // - multipart/form-data for FormData (with boundary)

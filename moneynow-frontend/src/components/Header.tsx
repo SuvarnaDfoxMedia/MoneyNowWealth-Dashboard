@@ -32,9 +32,12 @@ const Header = () => {
       ],
     },
     {
-      name: "Resources",
-      links: [{ name: "Blogs", href: "/blog" }],
-    },
+  name: "Resources",
+  links: [
+    { name: "Blogs", href: "/blog-listing" },
+  ]
+}
+,
   ];
 
   useEffect(() => {

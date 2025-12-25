@@ -700,7 +700,7 @@ const Register = () => {
   };
 
   return (
-    <section className="w-full min-h-[115dvh] my-0 flex items-center md:bg-[url('/images/Register-screen-2.jpg')] bg-no-repeat bg-cover bg-center">
+    <section className="w-full min-h-[118dvh] my-0 flex items-center md:bg-[url('/images/Register-screen-2.jpg')] bg-no-repeat bg-cover bg-center">
       <Toaster position="top-right" reverseOrder={false} />
 
 <div className="container mx-auto px-4 sm:px-6 md:px-[70px] py-8 md:py-10">
@@ -761,18 +761,34 @@ const Register = () => {
                   {errors.title && <p className="text-red-500 text-[12px] mb-2">{errors.title}</p>}
 
                   {/* First & Last Name */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2 md:mb-3">
-                    <div>
-                      <label className="text-[13px] block mb-1">First Name<span className="text-red-500">*</span></label>
-                      <input type="text" value={firstname} onChange={(e) => setFirstname(e.target.value)} className="w-full h-[38px] border border-[#E8E8E8] px-2" />
-                      {errors.firstname && <p className="text-red-500 text-[12px] mt-1">{errors.firstname}</p>}
-                    </div>
-                    <div>
-                      <label className="text-[13px] block mb-1">Last Name<span className="text-red-500">*</span></label>
-                      <input type="text" value={lastname} onChange={(e) => setLastname(e.target.value)} className="w-full h-[38px] border border-[#E8E8E8] px-2" />
-                      {errors.lastname && <p className="text-red-500 text-[12px] mt-1">{errors.lastname}</p>}
-                    </div>
-                  </div>
+           <div className="grid grid-cols-1 gap-2 mb-2 md:mb-3">
+  <div>
+    <label className="text-[13px] block mb-1">
+      First Name<span className="text-red-500">*</span>
+    </label>
+    <input
+      type="text"
+      value={firstname}
+      onChange={(e) => setFirstname(e.target.value)}
+      className="w-full h-[38px] border border-[#E8E8E8] px-2"
+    />
+    {errors.firstname && <p className="text-red-500 text-[12px] mt-1">{errors.firstname}</p>}
+  </div>
+
+  <div>
+    <label className="text-[13px] block mb-1">
+      Last Name<span className="text-red-500">*</span>
+    </label>
+    <input
+      type="text"
+      value={lastname}
+      onChange={(e) => setLastname(e.target.value)}
+      className="w-full h-[38px] border border-[#E8E8E8] px-2"
+    />
+    {errors.lastname && <p className="text-red-500 text-[12px] mt-1">{errors.lastname}</p>}
+  </div>
+</div>
+
 
                   {/* Email */}
                   <div className="mb-2 md:mb-3">

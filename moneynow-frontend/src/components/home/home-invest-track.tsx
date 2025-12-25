@@ -23,7 +23,7 @@ export default function HomeInvestTrack({ data }: HomeInvestTrackProps) {
 
   return (
     <section className="w-full bg-[#043F79] flex justify-center">
-<div className="max-w-6xl w-full flex flex-col md:flex-row items-center pt-[64px] pb-[68px] gap-5 md:gap-20">
+<div className="max-w-6xl w-full flex flex-col md:flex-row items-center pt-[64px] pb-[64px] gap-5 md:gap-20">
 
         {/* LEFT: Phone */}
         <div className="w-full md:w-2/5 flex justify-center mt-[-140px] md:mt-[-180px]">

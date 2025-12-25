@@ -197,20 +197,24 @@ export default function TopicListing() {
           </button>
 
           {openDropdownId === row._id && (
-            <div className="absolute top-full right-0 mt-2 bg-white border rounded-xl shadow-lg w-36 z-50">
-              <button
-                onClick={() => navigate(`/${role}/topic/edit/${row._id}?page=${page}`)}
-                className="flex gap-2 px-4 py-2 hover:bg-indigo-50"
-              >
-                <FiEdit /> Edit
-              </button>
-              <button
-                onClick={() => setDeleteModalId(row._id)}
-                className="flex gap-2 px-4 py-2 text-red-600 hover:bg-red-50"
-              >
-                <FiTrash2 /> Delete
-              </button>
-            </div>
+           <div className="absolute top-full right-0 mt-2 bg-white border rounded-xl shadow-lg w-30 z-50">
+  <button
+    onClick={() => navigate(`/${role}/topic/edit/${row._id}?page=${page}`)}
+    className="flex items-center gap-2 px-4 py-2 hover:bg-indigo-50 w-full"
+  >
+    <FiEdit className="text-lg" />
+    <span>Edit</span>
+  </button>
+
+  <button
+    onClick={() => setDeleteModalId(row._id)}
+    className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 w-full"
+  >
+    <FiTrash2 className="text-lg" />
+    <span>Delete</span>
+  </button>
+</div>
+
           )}
         </div>
       ),

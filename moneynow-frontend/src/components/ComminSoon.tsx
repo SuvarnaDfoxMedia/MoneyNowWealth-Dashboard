@@ -3,42 +3,31 @@ import Image from "next/image";
 
 import bgDesktop from "@/app/assets/Coming-Soon.jpg";
 import bgMobile from "@/app/assets/Coming-Soon-mb.jpg";
-import ProgressBar from "@/app/assets/progress-bar.png";
 
 const ComingSoon: React.FC = () => {
   return (
-    <section className="relative w-full min-h-[580px]">
-
-      {/* Desktop Background */}
-      <div className="hidden sm:block absolute inset-0">
+    <section className="w-screen h-screen overflow-hidden">
+      
+      {/* Desktop */}
+      <div className="hidden sm:block w-full h-full ">
         <Image
           src={bgDesktop}
-          alt="Background Desktop"
-          fill
-          className="object-cover"
+          alt="Coming Soon Desktop"
+          className="w-full h-full object-cover"
+          priority
         />
       </div>
 
-      {/* Mobile Background */}
-      <div className="sm:hidden absolute inset-0">
+      {/* Mobile */}
+      <div className="sm:hidden w-full h-full">
         <Image
           src={bgMobile}
-          alt="Background Mobile"
-          fill
+          alt="Coming Soon Mobile"
+          className="w-full h-full object-contain"
+          priority
         />
       </div>
 
-      {/* Center Content */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center space-y-5">
-        <h1 className="text-white text-3xl sm:text-[50px] font-semibold">
-          Coming Soon...
-        </h1>
-<Image
-  src={ProgressBar}
-  alt="Progress Bar"
-  className="w-[200px] sm:w-[320px] object-contain"
-/>
-      </div>
     </section>
   );
 };

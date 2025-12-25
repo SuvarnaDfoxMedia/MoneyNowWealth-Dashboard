@@ -1,8 +1,4 @@
-// /src/data/chooseJourneyData.ts
 
-// =============================
-// Choose Journey Section
-// =============================
 export const chooseJourneyTitle = "Choose Your Journey";
 export const chooseJourneySubtitle =
   "Whether you’re just starting out or fine-tuning your mutual fund investments, choose the path that fits your life. We guide every step.";

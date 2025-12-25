@@ -75,18 +75,40 @@ export default function ChangePasswordForm() {
 
     setLoading(true);
 
-    try {
-      const res = await axiosApi.post<{ message: string }>("/auth/change-password", { oldPassword, newPassword });
+    // try {
+    //   const res = await axiosApi.post<{ message: string }>("/auth/change-password", { oldPassword, newPassword });
 
-      toast.success(res.message || "Password changed successfully!");
-      setOldPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-      setTouched(false);
+    //   toast.success(res.message || "Password changed successfully!");
+    //   setOldPassword("");
+    //   setNewPassword("");
+    //   setConfirmPassword("");
+    //   setTouched(false);
 
-      await refreshUser(); // refresh AuthContext user
-      navigate(-1); // go back
-    } catch (err: any) {
+    //   await refreshUser(); // refresh AuthContext user
+    //   navigate(-1); // go back
+    // }
+try {
+  const res = await axiosApi.post<{ message: string }>(
+    "/auth/change-password",
+    { oldPassword, newPassword }
+  );
+
+  toast.success(res.message ?? "Password changed successfully!");
+
+  setOldPassword("");
+  setNewPassword("");
+  setConfirmPassword("");
+  setTouched(false);
+
+  await refreshUser();
+
+  setTimeout(() => {
+    navigate(-1);
+  }, 1200);
+}
+
+
+     catch (err: any) {
       const backendMsg = err.message || "Something went wrong";
 
       // Map backend errors to form fields
@@ -214,4 +236,6 @@ export default function ChangePasswordForm() {
     </div>
   );
 }
+
+
 

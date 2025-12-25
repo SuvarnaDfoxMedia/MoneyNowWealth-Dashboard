@@ -1,5 +1,5 @@
 import { useState } from "react";
-import API from "@/app/api/axios";
+import {API} from "@/app/api/axios";
 
 export const useApiPost = <T,>() => {
   const [loading, setLoading] = useState(false);

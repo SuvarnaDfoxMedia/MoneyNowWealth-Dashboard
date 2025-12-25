@@ -1,12 +1,12 @@
 "use client";
 
 import React from "react";
-import BlogListingBanner from "@/components/blog-listing-banner"; // adjust path if needed
+import LatestArticle from "@/components/blog-listing/LatestArticle"; 
 
 const Page = () => {
   return (
     <div>
-      <BlogListingBanner />
+      <LatestArticle/>
       </div>
   );
 };
